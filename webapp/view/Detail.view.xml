@@ -1,0 +1,35 @@
+<mvc:View controllerName="zslpmcrprb.controller.Detail" xmlns="sap.m" xmlns:semantic="sap.f.semantic"
+xmlns:mvc="sap.ui.core.mvc" xmlns:upload="sap.m.upload" >
+    <semantic:SemanticPage id="detailPage" busy="{detailView>/busy}" busyIndicatorDelay="{detailView>/delay}">
+        <semantic:titleHeading>
+            <Title text="{i18n>createNewProblem}" level="H2" />
+        </semantic:titleHeading>
+        <semantic:headerContent>
+            <ObjectAttribute xmlns="sap.m" text="{Name}" />
+        </semantic:headerContent>
+        <semantic:content>
+            <Panel id="problemCreationFields">
+                <content>
+                    <Table id="tableProblemCreationFields" showSeparators="None" noDataText="No Fields found">
+                        <columns>
+                            <Column width="30%" />
+                            <Column width="70%" />
+                        </columns>
+                        <ColumnListItem id="tableProblemCreationItemName">
+                            <Text id="tableProblemCreationItemLabelName" text="{i18n>problemName}" />
+                            <Input id="tableProblemCreationItemInputName" showSuggestion="false" showValueHelp="false" maxlength="40" width="450px"/>
+                        </ColumnListItem>
+                        <ColumnListItem id="tableProblemCreationDescription">
+                            <Text id="tableProblemCreationItemLabelDescription" text="{i18n>problemDescription}" />                            
+                            <Textarea id="tableProblemCreationItemInputDescription" value="" width="450px" />
+                        </ColumnListItem>
+                        <ColumnListItem id="tableProblemCreationReproduction">
+                            <Text id="tableProblemCreationItemLabelReproduction" text="{i18n>problemReproduction}" />                            
+                            <Textarea id="tableProblemCreationItemInputReproduction" value="" width="450px" />
+                        </ColumnListItem>
+                    </Table>
+                </content>
+            </Panel>
+        </semantic:content>
+    </semantic:SemanticPage>
+</mvc:View>
