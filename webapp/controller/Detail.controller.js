@@ -1,9 +1,35 @@
+// Constants classes
+
+const textTypes = Object.freeze(
+    class textTypes {
+        static reply = 'SU01';
+        static description = 'SU99';
+        static reproductionSteps = 'SURS';
+        static internalNote = 'SU04';
+        static solution = 'SUSO';
+        static businessConsequences = 'SUBI';
+    });
+
+const mandatoryInputFields = Object.freeze(
+    class mandatoryInputFields {
+        static mandatoryInputFields = [
+            "tableGeneralDataItemInputName",
+            "tableGeneralDataItemInputDescription",
+            "tableGeneralDataItemInputReproduction",
+            "tableGeneralDataItemInputBusinessImpact",
+            "tableGeneralDataItemInputDate",
+            "tableGeneralDataItemSelectPriority"];
+    });
+
+
 sap.ui.define([
     "./BaseController",
     "sap/ui/model/json/JSONModel",
     "../model/formatter",
-    "sap/m/library"
-], function (BaseController, JSONModel, formatter, mobileLibrary) {
+    "sap/m/library",
+    "../utils/sharedLibrary",
+    "sap/ui/core/library"
+], function (BaseController, JSONModel, formatter, mobileLibrary, sharedLibrary, CoreLibrary) {
     "use strict";
 
     // shortcut for sap.m.URLHelper
@@ -22,8 +48,8 @@ sap.ui.define([
             // detail page is busy indication immediately so there is no break in
             // between the busy indication for loading the view's meta data
             var oViewModel = new JSONModel({
-                busy : false,
-                delay : 0
+                busy: false,
+                delay: 0
             });
 
             this.getRouter().getRoute("object").attachPatternMatched(this._onObjectMatched, this);
@@ -31,6 +57,228 @@ sap.ui.define([
             this.setModel(oViewModel, "detailView");
 
             this.getOwnerComponent().getModel().metadataLoaded().then(this._onMetadataLoaded.bind(this));
+
+            this.oSemanticPage = this.byId("detailPage");
+
+            this.clearProblemControls();
+
+        },
+
+
+        /**
+         * Get problem input fields
+         */
+        getProblemInputFields: function () {
+
+            var oProblemInputFields = {};
+            oProblemInputFields.tableGeneralDataItemInputDate = this.byId("tableGeneralDataItemInputDate").getValue();
+            oProblemInputFields.tableGeneralDataItemInputName = this.byId("tableGeneralDataItemInputName").getValue();
+            oProblemInputFields.tableGeneralDataItemInputDescription = this.byId("tableGeneralDataItemInputDescription").getValue();
+            oProblemInputFields.tableGeneralDataItemInputReproduction = this.byId("tableGeneralDataItemInputReproduction").getValue();
+            oProblemInputFields.tableGeneralDataItemInputBusinessImpact = this.byId("tableGeneralDataItemInputBusinessImpact").getValue();
+            oProblemInputFields.tableGeneralDataItemSelectPriority = this.byId("tableGeneralDataItemSelectPriority").getSelectedKey();
+
+            return oProblemInputFields;
+
+        },
+
+
+        /**
+        * Clear problem controls
+        */
+
+        clearProblemControls: function () {
+
+            this.byId("tableGeneralDataItemInputDescription").setValue("");
+            this.byId("tableGeneralDataItemInputReproduction").setValue("");
+            this.byId("tableGeneralDataItemInputBusinessImpact").setValue("");
+            this.byId("tableGeneralDataItemInputName").setValue("");
+            this.byId("tableGeneralDataItemInputDate").setDateValue(new Date());
+            this.byId("tableGeneralDataItemSelectPriority").setSelectedKey("");
+        },
+
+        /**
+        * Mandatory fields handling
+        */
+
+        validateAndGetMandatoryFields: function () {
+
+            var oProblemInputFields = this.getProblemInputFields(),
+                oProblemInputFieldsValues = {},
+                t = this;
+
+            for (var key in oProblemInputFields) {
+
+                var sFieldValue = oProblemInputFields[key];
+
+                if ((!sFieldValue) && (mandatoryInputFields.mandatoryInputFields.includes(key))) {
+
+                    sharedLibrary.setFieldErrorState(t, key);
+
+                    return;
+
+                } else {
+
+                    sharedLibrary.dropFieldState(t, key);
+
+                    oProblemInputFieldsValues[key] = sFieldValue;
+
+                } // if (!sFieldValue)
+
+            } // for (var key in mandatoryFields)
+
+            return oProblemInputFieldsValues;
+
+        }, // validateMandatoryFields
+
+
+        /**
+        * Creation of a problem text
+        */
+
+        createProblemText: function (sGuid, sTextId, sText) {
+
+            var oTextPayload = {};
+
+            oTextPayload.Tdid = sTextId;
+            oTextPayload.TextString = sText;
+
+            sharedLibrary.createSubEntity("ProblemSet", sGuid, "Text", oTextPayload,
+                null, this.getResourceBundle().getText("textCreationFailure"),
+                this, function () {});
+        },
+
+        /**
+        * Creation of a problem through OData
+        */
+
+        createProblem: function () {
+
+            var oProblemInputFields = this.validateAndGetMandatoryFields();
+
+            if (typeof oProblemInputFields !== "undefined") {
+
+                var
+                    sProblemDescriptionText = oProblemInputFields.tableGeneralDataItemInputDescription,
+                    sProblemReproductionText = oProblemInputFields.tableGeneralDataItemInputReproduction,
+                    sProblemBusinessImpactText = oProblemInputFields.tableGeneralDataItemInputBusinessImpact,
+                    sProblemNameText = oProblemInputFields.tableGeneralDataItemInputName,
+                    sProblemDate = oProblemInputFields.tableGeneralDataItemInputDate,
+                    sProblemPriority = oProblemInputFields.tableGeneralDataItemSelectPriority,
+                    oPayload = {},
+                    t = this;
+
+                oPayload.Description = sProblemNameText;
+                oPayload.PostingDate = sharedLibrary.convertStringDateToEpoch(sProblemDate);
+                oPayload.ProductGuid = this.Guid;
+                oPayload.Priority = sProblemPriority;
+
+                ///////////////////ZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZ
+                ///////////////////ZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZ
+                ///////////////////ZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZ
+                ///////////////////ZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZ
+                oPayload.ProcessorBusinessPartner = '8';
+                ///////////////////ZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZ
+                ///////////////////ZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZ
+                ///////////////////ZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZ
+                ///////////////////ZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZ
+                ///////////////////ZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZ
+
+                var oPage = this.byId("detailPage");
+
+                oPage.setBusyIndicatorDelay(0);
+
+                oPage.setBusy(true);
+
+                sharedLibrary.createEntity("Problem", oPayload,
+                    null, this.getResourceBundle().getText("problemCreationFailure"),
+                    this, function (oData) {
+
+                        var sGuid = oData.Guid;
+
+                        // Setting description text
+
+                        t.createProblemText(sGuid, textTypes.description, sProblemDescriptionText);
+
+                        // Setting reproduction text
+
+                        t.createProblemText(sGuid, textTypes.reproductionSteps, sProblemReproductionText);
+
+                        // Setting Business Impact
+
+                        t.createProblemText(sGuid, textTypes.businessConsequences, sProblemBusinessImpactText);
+
+                        // Uploading attachments: removing dashes from Guid
+
+                        t.uploadProblemAttachments(sGuid, function () {
+
+                            var sSuccessText = t.getResourceBundle().getText("problemCreatedSuccessfully", oData.ObjectId);
+                            oPage.setBusy(false);
+                            t.getModel().refresh();
+                            t.clearProblemControls();
+                            sharedLibrary.informationAction(sSuccessText, function () {
+
+                                // Whole page reload is required to re-build UploadSet control
+                                // Without re-build the upload URL for some reason is not updated for
+                                // GUID of a new problem (i.e. GUID is passed, but UploadSet uses old upload URL)
+                                // in a case we need to create one more problem after a previous one
+
+                                t.reloadPage();
+
+                            });
+
+                        });
+
+                    });
+
+            } // if ( typeof oProblemInputFields !== "undefined" )
+            else {
+
+                sap.m.MessageBox.error(t.getResourceBundle().getText("mandatoryFieldsNotSet"));
+            }
+
+        },
+
+        reloadPage: function () {
+
+            location.reload();
+        },
+
+        /**
+        * Upload all incomplete problem attachments at once in a cycle
+        */
+
+        uploadProblemAttachments: function (sGuid, callback) {
+
+            var oUploadSet = this.byId("UploadSet"),
+                sAttachmentUploadURL = "/ProblemSet(guid'" + sGuid + "')/Attachment",
+                oItems = oUploadSet.getIncompleteItems();
+
+            oUploadSet.setUploadUrl(sharedLibrary.getODataPath(this) + sAttachmentUploadURL);
+
+            for (var k = 0; k < oItems.length; k++) {
+
+                var oItem = oItems[k];
+                var sFileName = oItem.getFileName();
+
+                var oCustomerHeaderToken = new sap.ui.core.Item({
+                    key: "x-csrf-token",
+                    text: this.getModel().getSecurityToken()
+                });
+
+                // Header slug to store a file name
+                var oCustomerHeaderSlug = new sap.ui.core.Item({
+                    key: "slug",
+                    text: sFileName
+                });
+
+                oUploadSet.addHeaderField(oCustomerHeaderToken);
+                oUploadSet.addHeaderField(oCustomerHeaderSlug);
+                oUploadSet.uploadItem(oItem);
+                oUploadSet.removeAllHeaderFields();
+            }
+
+            callback();
         },
 
         /* =========================================================== */
@@ -38,24 +286,70 @@ sap.ui.define([
         /* =========================================================== */
 
         /**
-         * Event handler when the share by E-Mail button has been clicked
-         * @public
-         */
-        onSendEmailPress: function () {
-            var oViewModel = this.getModel("detailView");
+        * Upload completed
+        */
 
-            URLHelper.triggerEmail(
-                null,
-                oViewModel.getProperty("/shareSendEmailSubject"),
-                oViewModel.getProperty("/shareSendEmailMessage")
-            );
+        onUploadCompleted: function (oEvent) {
+            var oUploadSet = this.byId("UploadSet");
+            oUploadSet.removeAllIncompleteItems();
         },
 
-        
+        /**
+        * Date changed
+        */
+
+        onDateChange: function (oEvent) {
+            var ValueState = CoreLibrary.ValueState,
+                oDP = oEvent.getSource(),
+                bValid = oEvent.getParameter("valid");
+
+            if (bValid) {
+                oDP.setValueState(ValueState.None);
+            } else {
+                oDP.setValueState(ValueState.Error);
+            }
+        },
+
+        /**
+        * Save button pressed
+        */
+
+        onPressSend: function () {
+
+            var sText = this.getResourceBundle().getText("confirmProblemPosting"),
+                t = this;
+
+            sharedLibrary.confirmAction(sText, function () {
+
+                t.createProblem();
+
+            });
+
+        },
+
+        /**
+        * Show Footer button pressed
+        */
+
+        onShowFooterPress: function () {
+
+            this.oSemanticPage.setShowFooter(!this.oSemanticPage.getShowFooter());
+        },
+
 
         /* =========================================================== */
         /* begin: internal methods                                     */
         /* =========================================================== */
+
+        /**
+        * Initialize priority combobox
+        */
+
+        _reloadPriorityCombobox: function (bEnabled) {
+
+
+            //   this.getView().byId("tableGeneralDataItemSelectPriority").setEnabled(bEnabled);
+        },
 
         /**
          * Binds the view to the object path and expands the aggregated line items.
@@ -64,11 +358,11 @@ sap.ui.define([
          * @private
          */
         _onObjectMatched: function (oEvent) {
-            var sObjectId =  oEvent.getParameter("arguments").objectId;
+            var sObjectId = oEvent.getParameter("arguments").objectId;
             this.getModel("appView").setProperty("/layout", "TwoColumnsMidExpanded");
-            this.getModel().metadataLoaded().then( function() {
+            this.getModel().metadataLoaded().then(function () {
                 var sObjectPath = this.getModel().createKey("ProductSet", {
-                    Guid:  sObjectId
+                    Guid: sObjectId
                 });
                 this._bindView("/" + sObjectPath);
             }.bind(this));
@@ -89,10 +383,10 @@ sap.ui.define([
             oViewModel.setProperty("/busy", false);
 
             this.getView().bindElement({
-                path : sObjectPath,
+                path: sObjectPath,
                 events: {
-                    change : this._onBindingChange.bind(this),
-                    dataRequested : function () {
+                    change: this._onBindingChange.bind(this),
+                    dataRequested: function () {
                         oViewModel.setProperty("/busy", true);
                     },
                     dataReceived: function () {
@@ -118,16 +412,18 @@ sap.ui.define([
             var sPath = oElementBinding.getPath(),
                 oResourceBundle = this.getResourceBundle(),
                 oObject = oView.getModel().getObject(sPath),
+                sObjectGuid = oObject.Guid,
                 sObjectId = oObject.Guid,
                 sObjectName = oObject.Id,
                 oViewModel = this.getModel("detailView");
 
+            this.Guid = sObjectGuid;
+            this.ObjectId = sObjectId;
+            this.Id = sObjectName;
+
             this.getOwnerComponent().oListSelector.selectAListItem(sPath);
 
-            oViewModel.setProperty("/shareSendEmailSubject",
-                oResourceBundle.getText("shareSendEmailObjectSubject", [sObjectId]));
-            oViewModel.setProperty("/shareSendEmailMessage",
-                oResourceBundle.getText("shareSendEmailObjectMessage", [sObjectName, sObjectId, location.href]));
+            this._reloadPriorityCombobox();
         },
 
         _onMetadataLoaded: function () {
@@ -167,7 +463,7 @@ sap.ui.define([
                 this.getModel("appView").setProperty("/layout", "MidColumnFullScreen");
             } else {
                 // reset to previous layout
-                this.getModel("appView").setProperty("/layout",  this.getModel("appView").getProperty("/previousLayout"));
+                this.getModel("appView").setProperty("/layout", this.getModel("appView").getProperty("/previousLayout"));
             }
         }
     });

@@ -96,6 +96,7 @@
         {
           "pattern": "",
           "name": "list",
+          "layout": "TwoColumnsMidExpanded",
           "target": "list"
         },
         {

@@ -59,6 +59,9 @@ sap.ui.define([
             this.getRouter().attachBypassed(this.onBypassed, this);
         },
 
+
+
+
         /* =========================================================== */
         /* event handlers                                              */
         /* =========================================================== */
@@ -72,6 +75,24 @@ sap.ui.define([
         onUpdateFinished : function (oEvent) {
             // update the list object counter after new data is loaded
             this._updateListItemCount(oEvent.getParameter("total"));
+
+            // selecting a first element
+
+            var elementsCount = oEvent.getParameter("total");
+
+            if (elementsCount !== 0) {
+
+                var oFirstItem = this._oList.getItems()[0];
+                this._oList.setSelectedItem(oFirstItem, true, true);
+
+            } else {
+
+                // Show NoDataFound if there are no items in list
+
+                this.getRouter().getTargets().display("detailNoObjectsAvailable");
+
+            } // if (elementsCount !== 0 )
+
         },
 
         /**
