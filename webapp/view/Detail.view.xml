@@ -23,7 +23,7 @@
                             </ColumnListItem>
                             <ColumnListItem id="tableGeneralDataItemName">
                                 <Text id="tableGeneralDataItemLabelName" text="{i18n>problemName}*" />
-                                <Input id="tableGeneralDataItemInputName" showSuggestion="false" showValueHelp="false" width="450px" />
+                                <Input id="tableGeneralDataItemInputName" maxLength="60" showSuggestion="false" showValueHelp="false" width="450px" />
                             </ColumnListItem>
                             <ColumnListItem id="tableGeneralDataDescription">
                                 <Text id="tableGeneralDataItemLabelDescription" text="{i18n>problemDescription}*" />
@@ -89,7 +89,7 @@
             <semantic:ExitFullScreenAction id="exitFullScreen" visible="{= !${device>/system/phone} &amp;&amp; ${appView>/actionButtonsInfo/midColumn/fullScreen}}" press=".toggleFullScreen" />
         </semantic:exitFullScreenAction>
         <semantic:titleCustomTextActions>
-            <Button text="{i18n>buttonShowFooter}" press="onShowFooterPress" visible="{= ${ReadOnly} ? false : true }" id="buttonShowFooter" />
+            <Button text="{i18n>buttonShowFooter}" press="onPressShowFooter"  id="buttonShowFooter" />
         </semantic:titleCustomTextActions>
         <semantic:footerCustomActions>
             <Button text="{i18n>buttonSend}" press="onPressSend" id="buttonSend" />

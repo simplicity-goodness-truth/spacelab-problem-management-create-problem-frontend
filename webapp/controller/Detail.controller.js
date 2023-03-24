@@ -21,7 +21,6 @@ const mandatoryInputFields = Object.freeze(
             "tableGeneralDataItemSelectPriority"];
     });
 
-
 sap.ui.define([
     "./BaseController",
     "sap/ui/model/json/JSONModel",
@@ -60,15 +59,125 @@ sap.ui.define([
 
             this.oSemanticPage = this.byId("detailPage");
 
-            this.clearProblemControls();
+            this._clearProblemControls();
 
         },
 
+        /* =========================================================== */
+        /* event handlers                                              */
+        /* =========================================================== */
+
+        /**
+        * Upload completed
+        */
+        onUploadCompleted: function (oEvent) {
+            var oUploadSet = this.byId("UploadSet");
+            oUploadSet.removeAllIncompleteItems();
+        },
+
+        /**
+        * Date changed
+        */
+        onDateChange: function (oEvent) {
+            var ValueState = CoreLibrary.ValueState,
+
+                oDP = oEvent.getSource(),
+                bValid = oEvent.getParameter("valid");
+
+            if (bValid) {
+                oDP.setValueState(ValueState.None);
+            } else {
+                oDP.setValueState(ValueState.Error);
+            }
+        },
+
+        /**
+        * Send button pressed
+        */
+        onPressSend: function () {
+
+            this._executeProblemCreation();
+
+        },
+
+        /**
+        * Show Footer button pressed
+        */
+        onPressShowFooter: function () {
+
+            this.oSemanticPage.setShowFooter(!this.oSemanticPage.getShowFooter());
+        },
+
+        /**
+        * Binds the view to the object path and expands the aggregated line items.
+        * @function
+        * @param {sap.ui.base.Event} oEvent pattern match event in route 'object'
+        * @private
+        */
+        _onObjectMatched: function (oEvent) {
+            var sObjectId = oEvent.getParameter("arguments").objectId;
+            this.getModel("appView").setProperty("/layout", "TwoColumnsMidExpanded");
+            this.getModel().metadataLoaded().then(function () {
+                var sObjectPath = this.getModel().createKey("ProductSet", {
+                    Guid: sObjectId
+                });
+                this._bindView("/" + sObjectPath);
+            }.bind(this));
+        },
+
+        _onBindingChange: function () {
+            var oView = this.getView(),
+                oElementBinding = oView.getElementBinding();
+
+            // No data for the binding
+            if (!oElementBinding.getBoundContext()) {
+                this.getRouter().getTargets().display("detailObjectNotFound");
+                // if object could not be found, the selection in the list
+                // does not make sense anymore.
+                this.getOwnerComponent().oListSelector.clearListListSelection();
+                return;
+            }
+
+            var sPath = oElementBinding.getPath(),
+                oResourceBundle = this.getResourceBundle(),
+                oObject = oView.getModel().getObject(sPath),
+                sObjectGuid = oObject.Guid,
+                sObjectId = oObject.Guid,
+                sObjectName = oObject.Id,
+                oViewModel = this.getModel("detailView");
+
+            this.Guid = sObjectGuid;
+            this.ObjectId = sObjectId;
+            this.Id = sObjectName;
+
+            this.getOwnerComponent().oListSelector.selectAListItem(sPath);
+
+          //  this._reloadPriorityCombobox();
+        },
+
+        _onMetadataLoaded: function () {
+            // Store original busy indicator delay for the detail view
+            var iOriginalViewBusyDelay = this.getView().getBusyIndicatorDelay(),
+                oViewModel = this.getModel("detailView");
+
+            // Make sure busy indicator is displayed immediately when
+            // detail view is displayed for the first time
+            oViewModel.setProperty("/delay", 0);
+
+            // Binding the view will set it to not busy - so the view is always busy if it is not bound
+            oViewModel.setProperty("/busy", true);
+            // Restore original busy indicator delay for the detail view
+            oViewModel.setProperty("/delay", iOriginalViewBusyDelay);
+        },
+
+        /* =========================================================== */
+        /* begin: internal methods                                     */
+        /* =========================================================== */
 
         /**
          * Get problem input fields
          */
-        getProblemInputFields: function () {
+        _getProblemInputFields: function () {
 
             var oProblemInputFields = {};
             oProblemInputFields.tableGeneralDataItemInputDate = this.byId("tableGeneralDataItemInputDate").getValue();
@@ -82,12 +191,10 @@ sap.ui.define([
 
         },
 
-
         /**
         * Clear problem controls
         */
-
-        clearProblemControls: function () {
+        _clearProblemControls: function () {
 
             this.byId("tableGeneralDataItemInputDescription").setValue("");
             this.byId("tableGeneralDataItemInputReproduction").setValue("");
@@ -100,10 +207,9 @@ sap.ui.define([
         /**
         * Mandatory fields handling
         */
+        _validateAndGetMandatoryProblemFields: function () {
 
-        validateAndGetMandatoryFields: function () {
-
-            var oProblemInputFields = this.getProblemInputFields(),
+            var oProblemInputFields = this._getProblemInputFields(),
                 oProblemInputFieldsValues = {},
                 t = this;
 
@@ -131,12 +237,10 @@ sap.ui.define([
 
         }, // validateMandatoryFields
 
-
         /**
         * Creation of a problem text
         */
-
-        createProblemText: function (sGuid, sTextId, sText) {
+        _createProblemText: function (sGuid, sTextId, sText) {
 
             var oTextPayload = {};
 
@@ -145,16 +249,15 @@ sap.ui.define([
 
             sharedLibrary.createSubEntity("ProblemSet", sGuid, "Text", oTextPayload,
                 null, this.getResourceBundle().getText("textCreationFailure"),
-                this, function () {});
+                this, function () { });
         },
 
         /**
         * Creation of a problem through OData
         */
+        _createProblem: function () {
 
-        createProblem: function () {
-
-            var oProblemInputFields = this.validateAndGetMandatoryFields();
+            var oProblemInputFields = this._validateAndGetMandatoryProblemFields();
 
             if (typeof oProblemInputFields !== "undefined") {
 
@@ -172,17 +275,9 @@ sap.ui.define([
                 oPayload.PostingDate = sharedLibrary.convertStringDateToEpoch(sProblemDate);
                 oPayload.ProductGuid = this.Guid;
                 oPayload.Priority = sProblemPriority;
+            
+              // oPayload.ProcessorBusinessPartner = '8';
 
-                ///////////////////ZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZ
-                ///////////////////ZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZ
-                ///////////////////ZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZ
-                ///////////////////ZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZ
-                oPayload.ProcessorBusinessPartner = '8';
-                ///////////////////ZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZ
-                ///////////////////ZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZ
-                ///////////////////ZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZ
-                ///////////////////ZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZ
-                ///////////////////ZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZ
 
                 var oPage = this.byId("detailPage");
 
@@ -198,24 +293,24 @@ sap.ui.define([
 
                         // Setting description text
 
-                        t.createProblemText(sGuid, textTypes.description, sProblemDescriptionText);
+                        t._createProblemText(sGuid, textTypes.description, sProblemDescriptionText);
 
                         // Setting reproduction text
 
-                        t.createProblemText(sGuid, textTypes.reproductionSteps, sProblemReproductionText);
+                        t._createProblemText(sGuid, textTypes.reproductionSteps, sProblemReproductionText);
 
                         // Setting Business Impact
 
-                        t.createProblemText(sGuid, textTypes.businessConsequences, sProblemBusinessImpactText);
+                        t._createProblemText(sGuid, textTypes.businessConsequences, sProblemBusinessImpactText);
 
                         // Uploading attachments: removing dashes from Guid
 
-                        t.uploadProblemAttachments(sGuid, function () {
+                        t._uploadProblemAttachments(sGuid, function () {
 
                             var sSuccessText = t.getResourceBundle().getText("problemCreatedSuccessfully", oData.ObjectId);
                             oPage.setBusy(false);
                             t.getModel().refresh();
-                            t.clearProblemControls();
+                            t._clearProblemControls();
                             sharedLibrary.informationAction(sSuccessText, function () {
 
                                 // Whole page reload is required to re-build UploadSet control
@@ -223,7 +318,7 @@ sap.ui.define([
                                 // GUID of a new problem (i.e. GUID is passed, but UploadSet uses old upload URL)
                                 // in a case we need to create one more problem after a previous one
 
-                                t.reloadPage();
+                                t._reloadPage();
 
                             });
 
@@ -239,7 +334,7 @@ sap.ui.define([
 
         },
 
-        reloadPage: function () {
+        _reloadPage: function () {
 
             location.reload();
         },
@@ -247,8 +342,7 @@ sap.ui.define([
         /**
         * Upload all incomplete problem attachments at once in a cycle
         */
-
-        uploadProblemAttachments: function (sGuid, callback) {
+        _uploadProblemAttachments: function (sGuid, callback) {
 
             var oUploadSet = this.byId("UploadSet"),
                 sAttachmentUploadURL = "/ProblemSet(guid'" + sGuid + "')/Attachment",
@@ -281,91 +375,20 @@ sap.ui.define([
             callback();
         },
 
-        /* =========================================================== */
-        /* event handlers                                              */
-        /* =========================================================== */
-
         /**
-        * Upload completed
+        * Create problem
         */
-
-        onUploadCompleted: function (oEvent) {
-            var oUploadSet = this.byId("UploadSet");
-            oUploadSet.removeAllIncompleteItems();
-        },
-
-        /**
-        * Date changed
-        */
-
-        onDateChange: function (oEvent) {
-            var ValueState = CoreLibrary.ValueState,
-                oDP = oEvent.getSource(),
-                bValid = oEvent.getParameter("valid");
-
-            if (bValid) {
-                oDP.setValueState(ValueState.None);
-            } else {
-                oDP.setValueState(ValueState.Error);
-            }
-        },
-
-        /**
-        * Save button pressed
-        */
-
-        onPressSend: function () {
+        _executeProblemCreation: function () {
 
             var sText = this.getResourceBundle().getText("confirmProblemPosting"),
                 t = this;
 
             sharedLibrary.confirmAction(sText, function () {
 
-                t.createProblem();
+                t._createProblem();
 
             });
 
-        },
-
-        /**
-        * Show Footer button pressed
-        */
-
-        onShowFooterPress: function () {
-
-            this.oSemanticPage.setShowFooter(!this.oSemanticPage.getShowFooter());
-        },
-
-
-        /* =========================================================== */
-        /* begin: internal methods                                     */
-        /* =========================================================== */
-
-        /**
-        * Initialize priority combobox
-        */
-
-        _reloadPriorityCombobox: function (bEnabled) {
-
-
-            //   this.getView().byId("tableGeneralDataItemSelectPriority").setEnabled(bEnabled);
-        },
-
-        /**
-         * Binds the view to the object path and expands the aggregated line items.
-         * @function
-         * @param {sap.ui.base.Event} oEvent pattern match event in route 'object'
-         * @private
-         */
-        _onObjectMatched: function (oEvent) {
-            var sObjectId = oEvent.getParameter("arguments").objectId;
-            this.getModel("appView").setProperty("/layout", "TwoColumnsMidExpanded");
-            this.getModel().metadataLoaded().then(function () {
-                var sObjectPath = this.getModel().createKey("ProductSet", {
-                    Guid: sObjectId
-                });
-                this._bindView("/" + sObjectPath);
-            }.bind(this));
         },
 
         /**
@@ -394,61 +417,6 @@ sap.ui.define([
                     }
                 }
             });
-        },
-
-        _onBindingChange: function () {
-            var oView = this.getView(),
-                oElementBinding = oView.getElementBinding();
-
-            // No data for the binding
-            if (!oElementBinding.getBoundContext()) {
-                this.getRouter().getTargets().display("detailObjectNotFound");
-                // if object could not be found, the selection in the list
-                // does not make sense anymore.
-                this.getOwnerComponent().oListSelector.clearListListSelection();
-                return;
-            }
-
-            var sPath = oElementBinding.getPath(),
-                oResourceBundle = this.getResourceBundle(),
-                oObject = oView.getModel().getObject(sPath),
-                sObjectGuid = oObject.Guid,
-                sObjectId = oObject.Guid,
-                sObjectName = oObject.Id,
-                oViewModel = this.getModel("detailView");
-
-            this.Guid = sObjectGuid;
-            this.ObjectId = sObjectId;
-            this.Id = sObjectName;
-
-            this.getOwnerComponent().oListSelector.selectAListItem(sPath);
-
-            this._reloadPriorityCombobox();
-        },
-
-        _onMetadataLoaded: function () {
-            // Store original busy indicator delay for the detail view
-            var iOriginalViewBusyDelay = this.getView().getBusyIndicatorDelay(),
-                oViewModel = this.getModel("detailView");
-
-            // Make sure busy indicator is displayed immediately when
-            // detail view is displayed for the first time
-            oViewModel.setProperty("/delay", 0);
-
-            // Binding the view will set it to not busy - so the view is always busy if it is not bound
-            oViewModel.setProperty("/busy", true);
-            // Restore original busy indicator delay for the detail view
-            oViewModel.setProperty("/delay", iOriginalViewBusyDelay);
-        },
-
-        /**
-         * Set the full screen mode to false and navigate to list page
-         */
-        onCloseDetailPress: function () {
-            this.getModel("appView").setProperty("/actionButtonsInfo/midColumn/fullScreen", false);
-            // No item should be selected on list after detail page is closed
-            this.getOwnerComponent().oListSelector.clearListListSelection();
-            this.getRouter().navTo("list");
         },
 
         /**
