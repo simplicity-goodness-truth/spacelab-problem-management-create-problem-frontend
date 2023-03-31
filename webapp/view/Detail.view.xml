@@ -57,10 +57,10 @@
                             showIcons="true"
                             uploadEnabled="true"
                             terminationEnabled="true"
-                            fileTypes="jpeg,csv,txt,doc,png,docx,xlsx,jpg,pdf"
+                            fileTypes="jpeg,csv,xls,txt,doc,png,docx,xlsx,jpg,pdf"
                             maxFileNameLength="255"
                             maxFileSize="10"
-                            mediaTypes="application/pdf,text/plain,application/msword,image/png,text/csv,text/html,application/zip,image/jpeg"
+                            mediaTypes="application/pdf,text/plain,application/msword,image/png,text/csv,text/html,application/zip,image/jpeg,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
                             items="{/AttachmentSet}"
                             beforeUploadStarts="onBeforeUploadStarts"
                             uploadCompleted="onUploadCompleted"
@@ -89,10 +89,10 @@
             <semantic:ExitFullScreenAction id="exitFullScreen" visible="{= !${device>/system/phone} &amp;&amp; ${appView>/actionButtonsInfo/midColumn/fullScreen}}" press=".toggleFullScreen" />
         </semantic:exitFullScreenAction>
         <semantic:titleCustomTextActions>
-            <Button text="{i18n>buttonShowFooter}" press="onPressShowFooter"  id="buttonShowFooter" />
+            <Button text="{i18n>buttonShowFooter}" press="onPressShowFooter"  id="buttonShowFooter"  icon="sap-icon://arrow-bottom"/>
         </semantic:titleCustomTextActions>
         <semantic:footerCustomActions>
-            <Button text="{i18n>buttonSend}" press="onPressSend" id="buttonSend" />
+            <Button text="{i18n>buttonSend}" press="onPressSend" id="buttonSend" icon="sap-icon://paper-plane"/>
         </semantic:footerCustomActions>
     </semantic:SemanticPage>
 </mvc:View>
