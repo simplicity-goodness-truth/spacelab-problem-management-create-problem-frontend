@@ -21,6 +21,12 @@ const mandatoryInputFields = Object.freeze(
             "tableGeneralDataItemSelectPriority"];
     });
 
+const emailAddressInputFields = Object.freeze(
+    class emailAddressInputFields {
+        static emailAddressInputFields = [
+            "tableGeneralDataItemInputContactPersonEmail"];
+    });
+
 sap.ui.define([
     "./BaseController",
     "sap/ui/model/json/JSONModel",
@@ -61,11 +67,58 @@ sap.ui.define([
 
             this._clearProblemControls();
 
+            // Getting  execution context from App.controller
+
+            var oExecutionContext = this.getOwnerComponent().getModel("executionContext");
+
+            // Current system user              
+
+            this.oExecutionContext = oExecutionContext.oData;
+
+            // Setting models to display user and company name + properties
+
+            this.byId("tableGeneralDataCompanyStatic").setModel(oExecutionContext, "runtimeModel");
+            this.byId("tableGeneralDataCompanyStaticMulti").setModel(oExecutionContext, "runtimeModel");
+            
+            this.byId("pageHeader").setModel(oExecutionContext, "runtimeModel");
+
+
+
+            // Bus for events from a list
+            var oEventBus = sap.ui.getCore().getEventBus();
+            // 1. ChannelName, 2. EventName, 3. Function to be executed, 4. Listener
+            oEventBus.subscribe("ListAction", "onRefreshDetailFromList", this.onRefreshDetailFromList, this);
+
+
+
+
         },
+
 
         /* =========================================================== */
         /* event handlers                                              */
         /* =========================================================== */
+        /**
+         * Before form is rendered       
+         */
+        onBeforeRendering: function () {
+
+                   
+
+        },
+        /**
+        * Details are refreshed from a list
+        */
+        onRefreshDetailFromList: function () {
+
+                 // Model for selected company
+
+                 var oSelectedCompany = this.getOwnerComponent().getModel("selectedCompany");
+                 this.byId("tableGeneralDataItemInputCompanyStaticMulti").setModel(oSelectedCompany, "selectedCompany");
+         
+            this.getModel().refresh();
+
+        },
 
         /**
         * Upload completed
@@ -152,7 +205,7 @@ sap.ui.define([
 
             this.getOwnerComponent().oListSelector.selectAListItem(sPath);
 
-          //  this._reloadPriorityCombobox();
+            //  this._reloadPriorityCombobox();
         },
 
         _onMetadataLoaded: function () {
@@ -186,6 +239,10 @@ sap.ui.define([
             oProblemInputFields.tableGeneralDataItemInputReproduction = this.byId("tableGeneralDataItemInputReproduction").getValue();
             oProblemInputFields.tableGeneralDataItemInputBusinessImpact = this.byId("tableGeneralDataItemInputBusinessImpact").getValue();
             oProblemInputFields.tableGeneralDataItemSelectPriority = this.byId("tableGeneralDataItemSelectPriority").getSelectedKey();
+            oProblemInputFields.tableGeneralDataItemInputContactPersonEmail = this.byId("tableGeneralDataItemInputContactPersonEmail").getValue();
+            oProblemInputFields.tableGeneralDataItemCheckboxUseContactPersonEmail = this.byId("tableGeneralDataItemCheckboxUseContactPersonEmail").getSelected();
+            oProblemInputFields.tableGeneralDataItemContactPersonData = this.byId("tableGeneralDataItemContactPersonData").getValue();
+
 
             return oProblemInputFields;
 
@@ -207,7 +264,7 @@ sap.ui.define([
         /**
         * Mandatory fields handling
         */
-        _validateAndGetMandatoryProblemFields: function () {
+        _validateAndGetProblemFields: function () {
 
             var oProblemInputFields = this._getProblemInputFields(),
                 oProblemInputFieldsValues = {},
@@ -216,6 +273,8 @@ sap.ui.define([
             for (var key in oProblemInputFields) {
 
                 var sFieldValue = oProblemInputFields[key];
+
+                // Checking mandatory fields
 
                 if ((!sFieldValue) && (mandatoryInputFields.mandatoryInputFields.includes(key))) {
 
@@ -230,6 +289,22 @@ sap.ui.define([
                     oProblemInputFieldsValues[key] = sFieldValue;
 
                 } // if (!sFieldValue)
+
+                // Additional check for email fields
+
+                if ((sFieldValue) && (emailAddressInputFields.emailAddressInputFields.includes(key))) {
+
+                    if (!sharedLibrary.isValidEmailAddress(sFieldValue)) {
+
+                        sap.m.MessageBox.error(this.getResourceBundle().getText("incorrectEmailFormat"));
+
+                        sharedLibrary.setFieldErrorState(t, key);
+
+                        return;
+
+                    }
+
+                }
 
             } // for (var key in mandatoryFields)
 
@@ -252,12 +327,15 @@ sap.ui.define([
                 this, function () { });
         },
 
+
+
         /**
         * Creation of a problem through OData
         */
         _createProblem: function () {
 
-            var oProblemInputFields = this._validateAndGetMandatoryProblemFields();
+            var oProblemInputFields = this._validateAndGetProblemFields(),
+                t = this;
 
             if (typeof oProblemInputFields !== "undefined") {
 
@@ -268,15 +346,36 @@ sap.ui.define([
                     sProblemNameText = oProblemInputFields.tableGeneralDataItemInputName,
                     sProblemDate = oProblemInputFields.tableGeneralDataItemInputDate,
                     sProblemPriority = oProblemInputFields.tableGeneralDataItemSelectPriority,
-                    oPayload = {},
-                    t = this;
+                    sProblemContactPersonEmail = oProblemInputFields.tableGeneralDataItemInputContactPersonEmail,
+                    bProblemUseContactPersonEmail = oProblemInputFields.tableGeneralDataItemCheckboxUseContactPersonEmail,
+                    sProblemContactPersonDataText = oProblemInputFields.tableGeneralDataItemContactPersonData,
+                    oPayload = {};
 
                 oPayload.Description = sProblemNameText;
                 oPayload.PostingDate = sharedLibrary.convertStringDateToEpoch(sProblemDate);
                 oPayload.ProductGuid = this.Guid;
+                oPayload.ProductName = this.Id;
                 oPayload.Priority = sProblemPriority;
-            
-             //  oPayload.ProcessorBusinessPartner = '8';
+                oPayload.ContactEmail = sProblemContactPersonEmail;
+                oPayload.NotifyByContactEmail = bProblemUseContactPersonEmail;
+
+                if (this.oExecutionContext.SystemUser.AuthorizedToCreateProblemOnBehalf) {
+
+                    // User authorized to create problems on behalf of Customer, so
+                    // we take a company from a selection
+
+                    this.oSelectedCompany = this.getOwnerComponent().getModel("selectedCompany");
+
+                    oPayload.CompanyBusinessPartner = this.oSelectedCompany.oData.CompanyBusinessPartner;
+
+
+                } else {
+
+                    // User is not authorized to create problems on behalf of Customer, so
+                    // we take a company from user profile
+
+                    oPayload.CompanyBusinessPartner = this.oExecutionContext.SystemUser.CompanyBusinessPartner;
+                }
 
 
                 var oPage = this.byId("detailPage");
@@ -291,7 +390,15 @@ sap.ui.define([
 
                         var sGuid = oData.Guid;
 
-                        // Setting description text
+                        // Setting description text with contact data
+
+
+                        if (sProblemContactPersonDataText.length > 0) {
+
+                            sProblemDescriptionText = sProblemDescriptionText + "\n" + "\n" +
+                                t.getResourceBundle().getText("contactPersonData") + "\n" + "\n" + sProblemContactPersonDataText;
+
+                        }
 
                         t._createProblemText(sGuid, textTypes.description, sProblemDescriptionText);
 
@@ -303,6 +410,7 @@ sap.ui.define([
 
                         t._createProblemText(sGuid, textTypes.businessConsequences, sProblemBusinessImpactText);
 
+
                         // Uploading attachments: removing dashes from Guid
 
                         t._uploadProblemAttachments(sGuid, function () {
@@ -312,6 +420,12 @@ sap.ui.define([
                             t.getModel().refresh();
                             t._clearProblemControls();
                             sharedLibrary.informationAction(sSuccessText, function () {
+
+
+                                // showing nothing on problem creation page until product is selected
+
+                                t.getOwnerComponent().getRouter().navTo("list", {}, false);
+
 
                                 // Whole page reload is required to re-build UploadSet control
                                 // Without re-build the upload URL for some reason is not updated for
@@ -325,6 +439,8 @@ sap.ui.define([
                         });
 
                     });
+
+                oPage.setBusy(false);
 
             } // if ( typeof oProblemInputFields !== "undefined" )
             else {

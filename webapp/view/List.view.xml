@@ -2,17 +2,34 @@
     controllerName="zslpmcrprb.controller.List"
     xmlns="sap.m"
     xmlns:semantic="sap.f.semantic"
-    xmlns:mvc="sap.ui.core.mvc">
+    xmlns:mvc="sap.ui.core.mvc"
+    xmlns:core="sap.ui.core">
 
     <semantic:SemanticPage
         id="listPage"
         preserveHeaderStateOnScroll="true"
         toggleHeaderOnTitleClick="false">
         <semantic:titleHeading>
-            <Title
+        <VBox>                
+                <Text text="{ path: 'runtimeModel>/SystemUser/FullName'}" id="systemUserName" class="sapUiTinyMarginEnd" />
+                <Text text="{ path: 'runtimeModel>/SystemUser/CompanyName'}" id="systemUserCompanyName" class="sapUiSmallMarginBottom" 
+                        visible="{= ${runtimeModel>/SystemUser/AuthorizedToCreateProblemOnBehalf} ? false : true }"/>
+                                    
+            <ComboBox id="companySelector" width="450px"                                 
+                showSecondaryValues="true" items="{ path: 'companySelectorModel>/CompaniesList'}" class="sapUiSmallMarginTop" 
+                visible="{= ${runtimeModel>/SystemUser/AuthorizedToCreateProblemOnBehalf} ? true : false }"
+                change="onCompanySelectorSelect" placeholder="{i18n>selectCompany}" >                            
+            <core:Item key="{companySelectorModel>CompanyBusinessPartner}" text="{companySelectorModel>CompanyName}" 
+                id="companySelectorItem"/>
+            </ComboBox>
+            
+        <Title
                 id="listPageTitle"
                 text="{listView>/title}"
-                level="H2"/>
+                class="sapUiSmallMarginTop" 
+                level="H2"/>                            
+
+                        </VBox>
         </semantic:titleHeading>
         <semantic:content>
             <!-- For client side filtering add this to the items attribute: parameters: {operationMode: 'Client'}}" -->
@@ -35,32 +52,7 @@
                 growingScrollToLoad="true"
                 updateFinished=".onUpdateFinished"
                 selectionChange=".onSelectionChange">
-
-                <!-- <headerToolbar>
-                    <OverflowToolbar>
-                        <SearchField
-                            id="searchField"
-                            showRefreshButton="true"
-                            tooltip="{i18n>listSearchTooltip}"
-                            search=".onSearch"
-                            width="auto">
-                            <layoutData>
-                                <OverflowToolbarLayoutData
-                                    minWidth="150px"
-                                    maxWidth="240px"
-                                    shrinkable="true"
-                                    priority="NeverOverflow"/>
-                            </layoutData>
-                        </SearchField>
-                        <ToolbarSpacer/>
-                        <Button
-                            id="sortButton"
-                            press=".onOpenViewSettings"
-                            icon="sap-icon://sort"
-                            type="Transparent"/>
-
-                    </OverflowToolbar>
-                </headerToolbar> -->
+               
                 <items>
                     <ObjectListItem
                         type="Navigation"
