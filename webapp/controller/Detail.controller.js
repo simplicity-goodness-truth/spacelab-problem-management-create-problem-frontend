@@ -18,7 +18,8 @@ const mandatoryInputFields = Object.freeze(
             "tableGeneralDataItemInputReproduction",
             "tableGeneralDataItemInputBusinessImpact",
             "tableGeneralDataItemInputDate",
-            "tableGeneralDataItemSelectPriority"];
+            "tableGeneralDataItemSelectPriority",
+            "tableGeneralDataItemSelectSystem"];
     });
 
 const emailAddressInputFields = Object.freeze(
@@ -79,7 +80,7 @@ sap.ui.define([
 
             this.byId("tableGeneralDataCompanyStatic").setModel(oExecutionContext, "runtimeModel");
             this.byId("tableGeneralDataCompanyStaticMulti").setModel(oExecutionContext, "runtimeModel");
-            
+
             this.byId("pageHeader").setModel(oExecutionContext, "runtimeModel");
 
 
@@ -87,9 +88,7 @@ sap.ui.define([
             // Bus for events from a list
             var oEventBus = sap.ui.getCore().getEventBus();
             // 1. ChannelName, 2. EventName, 3. Function to be executed, 4. Listener
-            oEventBus.subscribe("ListAction", "onRefreshDetailFromList", this.onRefreshDetailFromList, this);
-
-
+            oEventBus.subscribe("ListAction", "companyHasBeenSelected", this.onCompanyHasBeenSelected, this);
 
 
         },
@@ -98,24 +97,36 @@ sap.ui.define([
         /* =========================================================== */
         /* event handlers                                              */
         /* =========================================================== */
+
         /**
-         * Before form is rendered       
-         */
+        * After form is rendered       
+        *         
+        */
+        onAfterRendering: function () {
+
+
+        },
+
+        /**        
+        * Before form is rendered       
+        */
         onBeforeRendering: function () {
 
-                   
+
+
+            this._setSystemSelection();
+
+
+
 
         },
         /**
-        * Details are refreshed from a list
+        * Company has been selected on a list
         */
-        onRefreshDetailFromList: function () {
+        onCompanyHasBeenSelected: function () {
 
-                 // Model for selected company
+            this._processCompanySelection();
 
-                 var oSelectedCompany = this.getOwnerComponent().getModel("selectedCompany");
-                 this.byId("tableGeneralDataItemInputCompanyStaticMulti").setModel(oSelectedCompany, "selectedCompany");
-         
             this.getModel().refresh();
 
         },
@@ -228,6 +239,59 @@ sap.ui.define([
         /* =========================================================== */
 
         /**
+       * Set system selector
+       */
+        _setSystemSelection: function () {
+
+
+            // Model for list of systems            
+
+            var oSystemsList = this.getOwnerComponent().getModel("systemSelectorModel"),
+                oSelectedCompany = this.getOwnerComponent().getModel("selectedCompany");
+
+            this.byId("tableGeneralDataItemSelectSystem").setModel(oSystemsList, "systemSelectorModel");
+
+            if ((oSystemsList) && (oSystemsList.oData.SystemsList.length > 0)) {
+
+                this.byId("tableGeneralDataItemSelectSystem").setProperty("enabled", true);
+
+                var sCompanyName;
+
+                if (this.oExecutionContext.SystemUser.AuthorizedToCreateProblemOnBehalf) {
+
+                    sCompanyName = oSelectedCompany.oData.CompanyName;
+
+                } else {
+
+                    sCompanyName = this.oExecutionContext.SystemUser.CompanyName;
+
+                }
+
+
+                var sSystemSelectorText = this.getResourceBundle().getText("selectSystem", [sCompanyName,
+                    oSystemsList.oData.SystemsList.length]);
+
+                this.byId("tableGeneralDataItemSelectSystem").setPlaceholder(sSystemSelectorText);
+            }
+
+        },
+
+        /**
+       * Processing for a company selection
+       */
+        _processCompanySelection: function () {
+
+            // Model for selected company
+
+            var oSelectedCompany = this.getOwnerComponent().getModel("selectedCompany");
+            this.byId("tableGeneralDataItemInputCompanyStaticMulti").setModel(oSelectedCompany, "selectedCompany");
+
+            this._setSystemSelection();
+
+        },
+
+
+        /**
          * Get problem input fields
          */
         _getProblemInputFields: function () {
@@ -242,7 +306,7 @@ sap.ui.define([
             oProblemInputFields.tableGeneralDataItemInputContactPersonEmail = this.byId("tableGeneralDataItemInputContactPersonEmail").getValue();
             oProblemInputFields.tableGeneralDataItemCheckboxUseContactPersonEmail = this.byId("tableGeneralDataItemCheckboxUseContactPersonEmail").getSelected();
             oProblemInputFields.tableGeneralDataItemContactPersonData = this.byId("tableGeneralDataItemContactPersonData").getValue();
-
+            oProblemInputFields.tableGeneralDataItemSelectSystem = this.byId("tableGeneralDataItemSelectSystem").getSelectedKey();
 
             return oProblemInputFields;
 
@@ -259,6 +323,7 @@ sap.ui.define([
             this.byId("tableGeneralDataItemInputName").setValue("");
             this.byId("tableGeneralDataItemInputDate").setDateValue(new Date());
             this.byId("tableGeneralDataItemSelectPriority").setSelectedKey("");
+            this.byId("tableGeneralDataItemSelectSystem").setSelectedKey("");
         },
 
         /**
@@ -349,6 +414,7 @@ sap.ui.define([
                     sProblemContactPersonEmail = oProblemInputFields.tableGeneralDataItemInputContactPersonEmail,
                     bProblemUseContactPersonEmail = oProblemInputFields.tableGeneralDataItemCheckboxUseContactPersonEmail,
                     sProblemContactPersonDataText = oProblemInputFields.tableGeneralDataItemContactPersonData,
+                    sProblemSystem = oProblemInputFields.tableGeneralDataItemSelectSystem,
                     oPayload = {};
 
                 oPayload.Description = sProblemNameText;
@@ -358,6 +424,8 @@ sap.ui.define([
                 oPayload.Priority = sProblemPriority;
                 oPayload.ContactEmail = sProblemContactPersonEmail;
                 oPayload.NotifyByContactEmail = bProblemUseContactPersonEmail;
+                oPayload.SAPSystemName = sProblemSystem;
+
 
                 if (this.oExecutionContext.SystemUser.AuthorizedToCreateProblemOnBehalf) {
 

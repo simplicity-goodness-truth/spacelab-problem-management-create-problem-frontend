@@ -30,7 +30,21 @@
                                     <Input  id="tableGeneralDataItemInputCompanyStaticMulti" maxLength="60" showSuggestion="false" 
                                     showValueHelp="false" width="450px" value="{ path: 'selectedCompany>/CompanyName'}" editable="false" enabled="false"
                                     />
-                            </ColumnListItem>                            
+                            </ColumnListItem>            
+                            
+                            
+
+                            <ColumnListItem id="tableGeneralDataSystem" >
+                                <Text id="tableGeneralDataItemLabelSystem" text="{i18n>problemSystem}*" />
+                                    <ComboBox id="tableGeneralDataItemSelectSystem" width="450px"                                 
+                                    showSecondaryValues="true" items="{ path: 'systemSelectorModel>/SystemsList'}" class="sapUiSmallMarginTop"                                     
+                                    change="onSystemSelectorSelect"  enabled="false" >                            
+                                <core:Item key="{systemSelectorModel>SAPSystemName}" 
+                                    text="{systemSelectorModel>SAPSystemName} {systemSelectorModel>Description} ({systemSelectorModel>Role})" 
+                                    id="companySelectorItem"/>
+                                </ComboBox>
+   
+                            </ColumnListItem>
                             <ColumnListItem id="tableGeneralDataItemDate">
                                 <Text id="tableGeneralDataItemLabelDate" text="{i18n>problemDate}*" />
                                 <DatePicker id="tableGeneralDataItemInputDate" width="650px" displayFormat="dd.MM.yyyy" valueFormat="dd.MM.yyyy" change="onDateChange" />
@@ -39,6 +53,8 @@
                                 <Text id="tableGeneralDataItemLabelName" text="{i18n>problemName}*" />
                                 <Input id="tableGeneralDataItemInputName" maxLength="60" showSuggestion="false" showValueHelp="false" width="650px" />
                             </ColumnListItem>
+                
+
                             <ColumnListItem id="tableGeneralDataDescription">
                                 <Text id="tableGeneralDataItemLabelDescription" text="{i18n>problemDescription}*" />
                                 <TextArea id="tableGeneralDataItemInputDescription" value="" width="650px" rows="7" />
@@ -53,11 +69,11 @@
                             </ColumnListItem>
                             <ColumnListItem id="tableGeneralDataPriorities" >
                                 <Text id="tableGeneralDataItemLabelPriorities" text="{i18n>problemPriority}*" />
-                                <Select id="tableGeneralDataItemSelectPriority" width="650px" 
+                                <Select id="tableGeneralDataItemSelectPriority" width="450px" 
                                 enabled="{= ${PrioritiesCount} > 1 ? true : false }"
                                 showSecondaryValues="true" items="{Priority}"
                                 selectedKey="{'Priority/0/Code'}">
-                                    <core:Item key="{Code}" text="{Description}" />
+                                    <core:Item key="{Code}" text="{Description}" id="prioritySelectorItem"/>
                                 </Select>
                             </ColumnListItem>
 

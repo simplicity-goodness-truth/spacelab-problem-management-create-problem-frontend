@@ -7,8 +7,9 @@ sap.ui.define([
     "sap/m/GroupHeaderListItem",
     "sap/ui/Device",
     "sap/ui/core/Fragment",
-    "../model/formatter"
-], function (BaseController, JSONModel, Filter, Sorter, FilterOperator, GroupHeaderListItem, Device, Fragment, formatter) {
+    "../model/formatter",
+    "../utils/sharedLibrary"
+], function (BaseController, JSONModel, Filter, Sorter, FilterOperator, GroupHeaderListItem, Device, Fragment, formatter,sharedLibrary) {
     "use strict";
 
     return BaseController.extend("zslpmcrprb.controller.List", {
@@ -62,6 +63,8 @@ sap.ui.define([
 
             // Bus for events publishing
             this.oEventBus = sap.ui.getCore().getEventBus();
+
+
         },
 
 
@@ -78,6 +81,11 @@ sap.ui.define([
             if (this.oExecutionContext.oData.SystemUser.AuthorizedToCreateProblemOnBehalf) {
 
                 this._setCompanyRelatedConfiguration(null);
+
+            } else {
+
+                this._setCompanyRelatedConfiguration(this.oExecutionContext.oData.SystemUser.CompanyBusinessPartner, 
+                    this.oExecutionContext.oData.SystemUser.CompanyName);
 
             }
 
@@ -102,14 +110,14 @@ sap.ui.define([
          */
         onUpdateFinished: function (oEvent) {
 
-
             // If user has authorizations to create problems on behalf of a Customer,
             // then we prepare list of companies from App.controller
             if (this.oExecutionContext.oData.SystemUser.AuthorizedToCreateProblemOnBehalf) {
 
                 this._setCompaniesList();
-
+                
             }
+            
 
             // update the list object counter after new data is loaded
             this._updateListItemCount(oEvent.getParameter("total"));
@@ -288,7 +296,43 @@ sap.ui.define([
         /* =========================================================== */
         /* begin: internal methods                                     */
         /* =========================================================== */
+        /**
+        * Get list of systems
+        */
+        _getListOfSystems: function (sCompanyBusinessPartner, callback) {
 
+            var t = this,
+                sErroneousExecutionText = this.getResourceBundle().getText("oDataModelReadFailure");
+
+            sharedLibrary.readEntityWithFilter("System", "CompanyBusinessPartner eq '" + sCompanyBusinessPartner + "'",
+                sErroneousExecutionText, this, false, false, function (oData) {
+
+                    return callback(oData.results);
+
+                });
+
+        },
+        /**
+       * Set a list of systems
+       */
+        _setListOfSystems: function (sCompanyBusinessPartner) {
+
+            var t = this;
+
+            this._getListOfSystems(sCompanyBusinessPartner, function (results) {
+
+                var oSystemsModel = new sap.ui.model.json.JSONModel({
+
+                    SystemsList: results,
+
+                });
+
+                t.getOwnerComponent().setModel(oSystemsModel, "systemSelectorModel");
+
+            
+            });
+
+        },
 
         /**
          * Set company related configuration
@@ -310,9 +354,16 @@ sap.ui.define([
 
             this.getOwnerComponent().setModel(oSelectedCompany, "selectedCompany");
 
-            // Publishing event
+               if (oSelectedCompany.oData.CompanyBusinessPartner) {
+
+                this._setListOfSystems(oSelectedCompany.oData.CompanyBusinessPartner);
+
+            }
+
+
+            // Publishing event            
             
-            this.oEventBus.publish("ListAction", "onRefreshDetailFromList");
+            this.oEventBus.publish("ListAction", "companyHasBeenSelected");
 
         },
 
@@ -339,6 +390,8 @@ sap.ui.define([
             this.byId("systemUserName").setModel(this.oExecutionContext, "runtimeModel");
             this.byId("systemUserCompanyName").setModel(this.oExecutionContext, "runtimeModel");
             this.byId("companySelector").setModel(this.oExecutionContext, "runtimeModel");
+
+
 
         },
 

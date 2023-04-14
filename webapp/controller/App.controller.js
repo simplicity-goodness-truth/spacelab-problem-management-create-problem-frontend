@@ -82,7 +82,7 @@ sap.ui.define([
         /* =========================================================== */
         /* begin: internal methods                                     */
         /* =========================================================== */
-
+        
         /**
         * Get list of companies
         */
@@ -109,7 +109,18 @@ sap.ui.define([
 
             sharedLibrary.readEntity("SystemUser", sErroneousExecutionText, this, false, true, function (oData) {
                 t.oSystemUser = oData.results[0];
-                return callback();
+
+                if (!t.oSystemUser.AuthorizedToCreateProblem) {
+
+                    sap.m.MessageBox.error(t.getResourceBundle().getText("userNotAuthorizedToRunThisApp"));
+
+                } else {
+
+                    return callback();
+
+                }
+                
+             
 
             });
         }
