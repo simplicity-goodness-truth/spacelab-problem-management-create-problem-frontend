@@ -1,0 +1,66 @@
+<mvc:View
+    controllerName="yslpmcrprb.controller.List"
+    xmlns="sap.m"
+    xmlns:semantic="sap.f.semantic"
+    xmlns:mvc="sap.ui.core.mvc"
+    xmlns:core="sap.ui.core">
+
+    <semantic:SemanticPage
+        id="listPage"
+        preserveHeaderStateOnScroll="true"
+        toggleHeaderOnTitleClick="false">
+        <semantic:titleHeading>
+        <VBox>                
+                <Text text="{ path: 'runtimeModel>/SystemUser/FullName'}" id="systemUserName" class="sapUiTinyMarginEnd" />
+                <Text text="{ path: 'runtimeModel>/SystemUser/CompanyName'}" id="systemUserCompanyName" class="sapUiSmallMarginBottom" 
+                        visible="{= ${runtimeModel>/SystemUser/AuthorizedToCreateProblemOnBehalf} ? false : true }"/>
+                                    
+            <ComboBox id="companySelector" width="450px"                                 
+                showSecondaryValues="true" items="{ path: 'companySelectorModel>/CompaniesList'}" class="sapUiSmallMarginTop" 
+                visible="{= ${runtimeModel>/SystemUser/AuthorizedToCreateProblemOnBehalf} ? true : false }"
+                change="onCompanySelectorSelect" placeholder="{i18n>selectCompany}" >                            
+            <core:Item key="{companySelectorModel>CompanyBusinessPartner}" text="{companySelectorModel>CompanyName}" 
+                id="companySelectorItem"/>
+            </ComboBox>
+            
+        <Title
+                id="listPageTitle"
+                text="{listView>/title}"
+                class="sapUiSmallMarginTop" 
+                level="H2"/>                            
+
+                        </VBox>
+        </semantic:titleHeading>
+        <semantic:content>
+            <!-- For client side filtering add this to the items attribute: parameters: {operationMode: 'Client'}}" -->
+            <List
+                id="list"
+                width="auto"
+                class="sapFDynamicPageAlignContent"
+                items="{
+                    path: '/ProductSet',
+                    sorter: {
+                        path: 'Id',
+                        descending: false
+                    },
+                    groupHeaderFactory: '.createGroupHeader'
+                }"
+                busyIndicatorDelay="{listView>/delay}"
+                noDataText="{listView>/noDataText}"
+                mode="{= ${device>/system/phone} ? 'None' : 'SingleSelectMaster'}"
+                growing="true"
+                growingScrollToLoad="true"
+                updateFinished=".onUpdateFinished"
+                selectionChange=".onSelectionChange">
+               
+                <items>
+                    <ObjectListItem
+                        type="Navigation"
+                        press=".onSelectionChange"
+                        title="{Name}"
+                         />
+                </items>
+            </List>
+        </semantic:content>
+    </semantic:SemanticPage>
+</mvc:View>

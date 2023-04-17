@@ -1,0 +1,145 @@
+<mvc:View controllerName="yslpmcrprb.controller.Detail" xmlns="sap.m" xmlns:semantic="sap.f.semantic" xmlns:mvc="sap.ui.core.mvc" xmlns:upload="sap.m.upload" xmlns:core="sap.ui.core">
+    <semantic:SemanticPage id="detailPage" busy="{detailView>/busy}" busyIndicatorDelay="{detailView>/delay}" showFooter="true">
+        <semantic:titleHeading>
+            <Title text="{= ${runtimeModel>/SystemUser/AuthorizedToCreateProblemOnBehalf} ? ${i18n>createNewProblemOnBehalfOfCustomer} : ${i18n>createNewProblem} }" level="H2" id="pageHeader" />
+        </semantic:titleHeading>
+        <semantic:titleExpandedContent>
+
+                <Text text="{Name}" id="pageSubHeader1" />              
+        </semantic:titleExpandedContent>
+
+        <semantic:headerContent />
+        <semantic:content>
+            <VBox id="contentVBox">
+                <Panel id="panelGeneralData" expandable="true" expanded="true" headerText="{i18n>panelGeneralData}">
+                    <content>
+                        <Table id="tableGeneralDataFields" showSeparators="None" noDataText="No Fields found">
+                            <columns>
+                                <Column width="30%" id="tableGeneralDataFieldsLabel" />
+                                <Column width="70%" id="tableGeneralDataFieldsValue" />
+                            </columns>
+
+                            <ColumnListItem id="tableGeneralDataCompanyStatic" visible="{= ${runtimeModel>/SystemUser/AuthorizedToCreateProblemOnBehalf} ? false : true }" >
+                                <Text id="tableGeneralDataItemLabelCompanyStatic" text="{i18n>company}*" />                
+                                    <Input  id="tableGeneralDataItemInputCompanyStatic" maxLength="60" showSuggestion="false" 
+                                    showValueHelp="false" width="450px" value="{ path: 'runtimeModel>/SystemUser/CompanyName'}" editable="false" enabled="false" 
+                                    />
+                            </ColumnListItem>
+                            <ColumnListItem id="tableGeneralDataCompanyStaticMulti" visible="{= ${runtimeModel>/SystemUser/AuthorizedToCreateProblemOnBehalf} ? true : false }" >
+                                <Text id="tableGeneralDataItemLabelCompanyStaticMulti" text="{i18n>company}*"  />                
+                                    <Input  id="tableGeneralDataItemInputCompanyStaticMulti" maxLength="60" showSuggestion="false" 
+                                    showValueHelp="false" width="450px" value="{ path: 'selectedCompany>/CompanyName'}" editable="false" enabled="false"
+                                    />
+                            </ColumnListItem>            
+                            
+                            
+
+                            <ColumnListItem id="tableGeneralDataSystem" >
+                                <Text id="tableGeneralDataItemLabelSystem" text="{i18n>problemSystem}*" />
+                                    <ComboBox id="tableGeneralDataItemSelectSystem" width="450px"                                 
+                                    showSecondaryValues="true" items="{ path: 'systemSelectorModel>/SystemsList'}" class="sapUiSmallMarginTop"                                     
+                                    change="onSystemSelectorSelect"  enabled="false" >                            
+                                <core:Item key="{systemSelectorModel>SAPSystemName}" 
+                                    text="{systemSelectorModel>SAPSystemName} {systemSelectorModel>Description} ({systemSelectorModel>Role})" 
+                                    id="companySelectorItem"/>
+                                </ComboBox>
+   
+                            </ColumnListItem>
+                            <ColumnListItem id="tableGeneralDataItemDate">
+                                <Text id="tableGeneralDataItemLabelDate" text="{i18n>problemDate}*" />
+                                <DatePicker id="tableGeneralDataItemInputDate" width="650px" displayFormat="dd.MM.yyyy" valueFormat="dd.MM.yyyy" change="onDateChange" />
+                            </ColumnListItem>
+                            <ColumnListItem id="tableGeneralDataItemName">
+                                <Text id="tableGeneralDataItemLabelName" text="{i18n>problemName}*" />
+                                <Input id="tableGeneralDataItemInputName" maxLength="60" showSuggestion="false" showValueHelp="false" width="650px" />
+                            </ColumnListItem>
+                
+
+                            <ColumnListItem id="tableGeneralDataDescription">
+                                <Text id="tableGeneralDataItemLabelDescription" text="{i18n>problemDescription}*" />
+                                <TextArea id="tableGeneralDataItemInputDescription" value="" width="650px" rows="7" />
+                            </ColumnListItem>
+                            <ColumnListItem id="tableGeneralDataReproduction">
+                                <Text id="tableGeneralDataItemLabelReproduction" text="{i18n>problemReproduction}*" />
+                                <TextArea id="tableGeneralDataItemInputReproduction" value="" width="650px" rows="7" />
+                            </ColumnListItem>
+                            <ColumnListItem id="tableGeneralDataBusinessImpact">
+                                <Text id="tableGeneralDataItemLabelBusinessImpact" text="{i18n>problemBusinessImpact}*" />
+                                <TextArea id="tableGeneralDataItemInputBusinessImpact" value="" width="650px" rows="7" />
+                            </ColumnListItem>
+                            <ColumnListItem id="tableGeneralDataPriorities" >
+                                <Text id="tableGeneralDataItemLabelPriorities" text="{i18n>problemPriority}*" />
+                                <Select id="tableGeneralDataItemSelectPriority" width="450px" 
+                                enabled="{= ${PrioritiesCount} > 1 ? true : false }"
+                                showSecondaryValues="true" items="{Priority}"
+                                selectedKey="{'Priority/0/Code'}">
+                                    <core:Item key="{Code}" text="{Description}" id="prioritySelectorItem"/>
+                                </Select>
+                            </ColumnListItem>
+
+                            <ColumnListItem id="tableGeneralDataContactPersonData">
+                                <Text id="tableGeneralDataItemLabelContactPersonData" text="{i18n>contactPersonData}" />
+                                <TextArea id="tableGeneralDataItemContactPersonData" value="" width="650px" rows="5" />
+                            </ColumnListItem>
+
+                            <ColumnListItem id="tableGeneralDataItemContactPersonEmail">
+                                <Text id="tableGeneralDataItemLabelContactPersonEmail" text="{i18n>contactPersonEmail}" />
+                                <Input id="tableGeneralDataItemInputContactPersonEmail"  showSuggestion="false" 
+                                    showValueHelp="false" width="650px" maxLength="60"/>
+                            </ColumnListItem>
+
+                            <ColumnListItem id="tableGeneralDataItemUseContactPersonEmail">
+                                <Text id="tableGeneralDataItemLabelUseContactPersonEmail" text="{i18n>useContactPersonEmail}" />
+                            <CheckBox id="tableGeneralDataItemCheckboxUseContactPersonEmail" selected="false" />
+
+                        </ColumnListItem>
+                        </Table>
+                    </content>
+                </Panel>
+                <Panel id="panelAttachments" expandable="true" expanded="true" headerText="{i18n>panelAttachments}">
+                    <content>
+                        <upload:UploadSet
+                            id="UploadSet"
+                            instantUpload="false"
+                            showIcons="true"
+                            uploadEnabled="true"
+                            terminationEnabled="true"
+                            fileTypes="jpeg,csv,xls,txt,doc,png,docx,xlsx,jpg,pdf"
+                            maxFileNameLength="255"
+                            maxFileSize="10"
+                            mediaTypes="application/pdf,text/plain,application/msword,image/png,text/csv,text/html,application/zip,image/jpeg,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                            items="{/AttachmentSet}"
+                            beforeUploadStarts="onBeforeUploadStarts"
+                            uploadCompleted="onUploadCompleted"
+                            afterItemAdded="onAfterItemAdded"
+                            noDataDescription="{i18n>noAttachmentsDescription}"
+                            noDataText="{i18n>noAttachmentsText}"
+                        >
+                            <upload:toolbar>
+                                <OverflowToolbar id="OverflowToolbar">
+                                    <ToolbarSpacer id="ToolbarSpacer" />
+                                </OverflowToolbar>
+                            </upload:toolbar>
+                            <upload:items>
+                                <upload:UploadSetItem id="UploadSetItem" fileName="{Name}" mediaType="{Mimetype}" url="{DocumentId}" />
+                            </upload:items>
+                        </upload:UploadSet>
+                    </content>
+                </Panel>
+            </VBox>
+        </semantic:content>
+
+        <semantic:fullScreenAction>
+            <semantic:FullScreenAction id="enterFullScreen" visible="{= !${device>/system/phone} &amp;&amp; !${appView>/actionButtonsInfo/midColumn/fullScreen}}" press=".toggleFullScreen" />
+        </semantic:fullScreenAction>
+        <semantic:exitFullScreenAction>
+            <semantic:ExitFullScreenAction id="exitFullScreen" visible="{= !${device>/system/phone} &amp;&amp; ${appView>/actionButtonsInfo/midColumn/fullScreen}}" press=".toggleFullScreen" />
+        </semantic:exitFullScreenAction>
+        <semantic:titleCustomTextActions>
+            <Button text="{i18n>buttonShowFooter}" press="onPressShowFooter"  id="buttonShowFooter"  icon="sap-icon://arrow-bottom"/>
+        </semantic:titleCustomTextActions>
+        <semantic:footerCustomActions>
+            <Button text="{i18n>buttonSend}" press="onPressSend" id="buttonSend" icon="sap-icon://paper-plane"/>
+        </semantic:footerCustomActions>
+    </semantic:SemanticPage>
+</mvc:View>
