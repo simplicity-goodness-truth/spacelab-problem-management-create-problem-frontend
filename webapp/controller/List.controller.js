@@ -339,7 +339,7 @@ sap.ui.define([
          */
         _setCompanyRelatedConfiguration: function (sCompanyBusinessPartner, sCompanyName) {
 
-            this._oListFilterState.aSearch = [new Filter("CompanyBusinessPartner", FilterOperator.Contains, sCompanyBusinessPartner)];
+            this._oListFilterState.aSearch = [new Filter("CompanyBusinessPartner", FilterOperator.EQ, sCompanyBusinessPartner)];
 
             this._applyFilterSearch();
 
