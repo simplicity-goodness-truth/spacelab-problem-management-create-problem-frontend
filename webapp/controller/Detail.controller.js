@@ -91,19 +91,30 @@ sap.ui.define([
             oEventBus.subscribe("ListAction", "companyHasBeenSelected", this.onCompanyHasBeenSelected, this);
 
 
-        },
+            // Attaching error state drop events to mandatory and email fields
 
+            this._attachErrorStateDropToMandatoryFields();
+            this._attachErrorStateDropToEmailFields();
+
+        },
 
         /* =========================================================== */
         /* event handlers                                              */
         /* =========================================================== */
 
         /**
-        * After form is rendered       
-        *         
+        * Selected file format mismatch
+        */
+        onMediaTypeMismatch: function () {
+
+            sap.m.MessageBox.error(this.getResourceBundle().getText("fileFormatIsNotSupported"));
+
+        },
+
+        /**
+        * After form is rendered                    
         */
         onAfterRendering: function () {
-
 
         },
 
@@ -112,13 +123,7 @@ sap.ui.define([
         */
         onBeforeRendering: function () {
 
-
-
             this._setSystemSelection();
-
-
-
-
         },
         /**
         * Company has been selected on a list
@@ -129,13 +134,14 @@ sap.ui.define([
 
             this.getModel().refresh();
 
+
         },
 
         /**
         * Upload completed
         */
         onUploadCompleted: function (oEvent) {
-            var oUploadSet = this.byId("UploadSet");
+            var oUploadSet = this.byId("problemUploadSet");
             oUploadSet.removeAllIncompleteItems();
         },
 
@@ -238,9 +244,112 @@ sap.ui.define([
         /* begin: internal methods                                     */
         /* =========================================================== */
 
+        _attachErrorStateDropToFields: function (oFieldsArray) {
+
+            // Attaching  change event to  fields to drop erroneous state
+            // 
+            // sap.m.TextArea / sap.m.Input:  attachLiveChange
+            // sap.m.DatePicker: attachAfterValueHelpOpen
+            // sap.m.ComboBox: change
+
+            var t = this;
+
+            for (var key in oFieldsArray) {
+
+                var sControlId = oFieldsArray[key],
+                    sControlClassName = t.byId(sControlId).__proto__.getMetadata()._sClassName;
+
+                switch (sControlClassName) {
+
+                    case 'sap.m.TextArea':
+
+                        t.byId(sControlId).attachEvent("liveChange", function (oEvent) {
+
+                            t._dropErrorStateByOEvent(oEvent);
+
+                        });
+
+                        break;
+
+                    case 'sap.m.Input':
+
+                        t.byId(sControlId).attachEvent("liveChange", function (oEvent) {
+
+                            t._dropErrorStateByOEvent(oEvent);
+
+                        });
+
+                        break;
+
+                    case 'sap.m.DatePicker':
+
+                        t.byId(sControlId).attachEvent("afterValueHelpOpen", function (oEvent) {
+
+                            t._dropErrorStateByOEvent(oEvent);
+
+                        });
+
+                        break;
+
+                    case 'sap.m.ComboBox':
+
+                        t.byId(sControlId).attachEvent("change", function (oEvent) {
+
+                            t._dropErrorStateByOEvent(oEvent);
+
+                        });
+
+                        break;
+
+                    default: break;
+                }
+
+            }
+
+
+
+        },
+
+
+        /*
+        * Attach error state drop to email fields 
+        */
+        _attachErrorStateDropToEmailFields: function () {
+
+            this._attachErrorStateDropToFields(emailAddressInputFields.emailAddressInputFields);
+
+        },
+
+        /*
+        * Drop error control in error state by oEvent
+        */
+        _dropErrorStateByOEvent: function (oEvent) {
+
+            var sId = oEvent.getSource().sId,
+                iPositionOfId = sId.lastIndexOf("-") + 1;
+
+            var sControlId = sId.slice(iPositionOfId);
+
+            if (this.byId(sControlId).getValueState() == 'Error') {
+
+                sharedLibrary.dropFieldState(this, sControlId);
+
+            }
+
+        },
+
+        /*
+        * Attach error state drop to mandatory fields 
+        */
+        _attachErrorStateDropToMandatoryFields: function () {
+
+            this._attachErrorStateDropToFields(mandatoryInputFields.mandatoryInputFields);
+
+        },
+
         /**
-       * Set system selector
-       */
+         * Set system selector
+        */
         _setSystemSelection: function () {
 
 
@@ -281,9 +390,11 @@ sap.ui.define([
        */
         _processCompanySelection: function () {
 
+
             // Model for selected company
 
             var oSelectedCompany = this.getOwnerComponent().getModel("selectedCompany");
+
             this.byId("tableGeneralDataItemInputCompanyStaticMulti").setModel(oSelectedCompany, "selectedCompany");
 
             this._setSystemSelection();
@@ -324,6 +435,8 @@ sap.ui.define([
             this.byId("tableGeneralDataItemInputDate").setDateValue(new Date());
             this.byId("tableGeneralDataItemSelectPriority").setSelectedKey("");
             this.byId("tableGeneralDataItemSelectSystem").setSelectedKey("");
+            this.byId("tableGeneralDataItemContactPersonData").setValue("");
+
         },
 
         /**
@@ -528,7 +641,7 @@ sap.ui.define([
         */
         _uploadProblemAttachments: function (sGuid, callback) {
 
-            var oUploadSet = this.byId("UploadSet"),
+            var oUploadSet = this.byId("problemUploadSet"),
                 sAttachmentUploadURL = "/ProblemSet(guid'" + sGuid + "')/Attachment",
                 oItems = oUploadSet.getIncompleteItems();
 
@@ -544,10 +657,11 @@ sap.ui.define([
                     text: this.getModel().getSecurityToken()
                 });
 
+
                 // Header slug to store a file name
                 var oCustomerHeaderSlug = new sap.ui.core.Item({
                     key: "slug",
-                    text: sFileName
+                    text: encodeURIComponent(sFileName)
                 });
 
                 oUploadSet.addHeaderField(oCustomerHeaderToken);

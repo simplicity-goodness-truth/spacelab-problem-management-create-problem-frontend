@@ -80,9 +80,12 @@ sap.ui.define([
 
             if (this.oExecutionContext.oData.SystemUser.AuthorizedToCreateProblemOnBehalf) {
 
+         
                 this._setCompanyRelatedConfiguration(null);
+            
 
             } else {
+                
 
                 this._setCompanyRelatedConfiguration(this.oExecutionContext.oData.SystemUser.CompanyBusinessPartner, 
                     this.oExecutionContext.oData.SystemUser.CompanyName);
@@ -96,7 +99,7 @@ sap.ui.define([
         /**
          * Company selection has been changed         
          */
-        onCompanySelectorSelect: function (oEvent) {
+        onCompanySelectorSelect: function (oEvent) {            
 
             this._setCompanyRelatedConfiguration(oEvent.getSource().getSelectedKey(), oEvent.getSource().getSelectedItem().getText());
 
@@ -339,7 +342,7 @@ sap.ui.define([
          */
         _setCompanyRelatedConfiguration: function (sCompanyBusinessPartner, sCompanyName) {
 
-            this._oListFilterState.aSearch = [new Filter("CompanyBusinessPartner", FilterOperator.Contains, sCompanyBusinessPartner)];
+            this._oListFilterState.aSearch = [new Filter("CompanyBusinessPartner", FilterOperator.EQ, sCompanyBusinessPartner)];
 
             this._applyFilterSearch();
 
@@ -362,6 +365,7 @@ sap.ui.define([
 
 
             // Publishing event            
+
             
             this.oEventBus.publish("ListAction", "companyHasBeenSelected");
 
