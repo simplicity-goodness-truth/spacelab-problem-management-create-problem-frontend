@@ -9,7 +9,7 @@ sap.ui.define([
     "sap/ui/core/Fragment",
     "../model/formatter",
     "../utils/sharedLibrary"
-], function (BaseController, JSONModel, Filter, Sorter, FilterOperator, GroupHeaderListItem, Device, Fragment, formatter,sharedLibrary) {
+], function (BaseController, JSONModel, Filter, Sorter, FilterOperator, GroupHeaderListItem, Device, Fragment, formatter, sharedLibrary) {
     "use strict";
 
     return BaseController.extend("zslpmcrprb.controller.List", {
@@ -80,14 +80,14 @@ sap.ui.define([
 
             if (this.oExecutionContext.oData.SystemUser.AuthorizedToCreateProblemOnBehalf) {
 
-         
-                this._setCompanyRelatedConfiguration(null);
-            
+
+                this._setCompanyRelatedConfiguration(null, null);
+
 
             } else {
-                
 
-                this._setCompanyRelatedConfiguration(this.oExecutionContext.oData.SystemUser.CompanyBusinessPartner, 
+
+                this._setCompanyRelatedConfiguration(this.oExecutionContext.oData.SystemUser.CompanyBusinessPartner,
                     this.oExecutionContext.oData.SystemUser.CompanyName);
 
             }
@@ -99,7 +99,7 @@ sap.ui.define([
         /**
          * Company selection has been changed         
          */
-        onCompanySelectorSelect: function (oEvent) {            
+        onCompanySelectorSelect: function (oEvent) {
 
             this._setCompanyRelatedConfiguration(oEvent.getSource().getSelectedKey(), oEvent.getSource().getSelectedItem().getText());
 
@@ -118,9 +118,9 @@ sap.ui.define([
             if (this.oExecutionContext.oData.SystemUser.AuthorizedToCreateProblemOnBehalf) {
 
                 this._setCompaniesList();
-                
+
             }
-            
+
 
             // update the list object counter after new data is loaded
             this._updateListItemCount(oEvent.getParameter("total"));
@@ -332,7 +332,7 @@ sap.ui.define([
 
                 t.getOwnerComponent().setModel(oSystemsModel, "systemSelectorModel");
 
-            
+
             });
 
         },
@@ -342,32 +342,34 @@ sap.ui.define([
          */
         _setCompanyRelatedConfiguration: function (sCompanyBusinessPartner, sCompanyName) {
 
-            this._oListFilterState.aSearch = [new Filter("CompanyBusinessPartner", FilterOperator.EQ, sCompanyBusinessPartner)];
+            if (sCompanyBusinessPartner) {
 
-            this._applyFilterSearch();
+                this._oListFilterState.aSearch = [new Filter("CompanyBusinessPartner", FilterOperator.EQ, sCompanyBusinessPartner)];
 
-            // Setting a model for further usage in detail view
+                this._applyFilterSearch();
 
-            var oSelectedCompany = new sap.ui.model.json.JSONModel({
+                // Setting a model for further usage in detail view
 
-                CompanyBusinessPartner: sCompanyBusinessPartner,
-                CompanyName: sCompanyName
+                var oSelectedCompany = new sap.ui.model.json.JSONModel({
 
-            });
+                    CompanyBusinessPartner: sCompanyBusinessPartner,
+                    CompanyName: sCompanyName
 
-            this.getOwnerComponent().setModel(oSelectedCompany, "selectedCompany");
+                });
 
-               if (oSelectedCompany.oData.CompanyBusinessPartner) {
+                this.getOwnerComponent().setModel(oSelectedCompany, "selectedCompany");
 
-                this._setListOfSystems(oSelectedCompany.oData.CompanyBusinessPartner);
+                if (oSelectedCompany.oData.CompanyBusinessPartner) {
+
+                    this._setListOfSystems(oSelectedCompany.oData.CompanyBusinessPartner);
+
+                }
+
+                // Publishing event            
+
+                this.oEventBus.publish("ListAction", "companyHasBeenSelected");
 
             }
-
-
-            // Publishing event            
-
-            
-            this.oEventBus.publish("ListAction", "companyHasBeenSelected");
 
         },
 
@@ -455,22 +457,21 @@ sap.ui.define([
             this._oList.getBinding("items").filter(aFilters, "Application");
             // changes the noDataText of the list in case there are no filter results
             if (aFilters.length !== 0) {
-               // oViewModel.setProperty("/noDataText", this.getResourceBundle().getText("listListNoDataWithFilterOrSearchText"));
-            
+                // oViewModel.setProperty("/noDataText", this.getResourceBundle().getText("listListNoDataWithFilterOrSearchText"));
+
                 if (this.oExecutionContext.oData.SystemUser.AuthorizedToCreateProblemOnBehalf) {
-                    
+
                     oViewModel.setProperty("/noDataText", this.getResourceBundle().getText("selectCompanyToSelectProducts"));
-                    
-                
-                } else
-                {
+
+
+                } else {
                     oViewModel.setProperty("/noDataText", this.getResourceBundle().getText("listListNoDataWithFilterOrSearchText"));
-                    
+
                 }
 
-            
-                
-            
+
+
+
             } else if (this._oListFilterState.aSearch.length > 0) {
                 // only reset the no data text to default when no new search was triggered
                 oViewModel.setProperty("/noDataText", this.getResourceBundle().getText("listListNoDataText"));

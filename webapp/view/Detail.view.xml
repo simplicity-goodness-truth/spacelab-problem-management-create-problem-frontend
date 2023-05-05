@@ -46,7 +46,7 @@
    
                             </ColumnListItem>
                             <ColumnListItem id="tableGeneralDataItemDate">
-                                <Text id="tableGeneralDataItemLabelDate" text="{i18n>problemDate}*" />
+                                <Text id="tableGeneralDataItemLabelDate" text="{i18n>problemDate}" />
                                 <DatePicker id="tableGeneralDataItemInputDate" width="650px" displayFormat="dd.MM.yyyy" valueFormat="dd.MM.yyyy" change="onDateChange" />
                             </ColumnListItem>
                             <ColumnListItem id="tableGeneralDataItemName">
@@ -104,7 +104,7 @@
                             showIcons="true"
                             uploadEnabled="true"
                             terminationEnabled="true"
-                            fileTypes="jpeg,csv,xls,txt,doc,png,docx,xlsx,jpg,pdf,eml,sar,zip,rar"
+                            fileTypes="jpeg,csv,xls,txt,doc,png,docx,xlsx,jpg,pdf,eml,sar,zip,rar,log"
                             maxFileNameLength="255"
                             maxFileSize="10"
                             mediaTypes="application/pdf,text/plain,application/msword,image/png,text/csv,text/html,application/zip,image/jpeg,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/octet-stream,message/rfc822,application/vnd.sar,application/zip,application/vnd.rar,application/x-rar-compressed,application/x-zip-compressed"
@@ -114,8 +114,8 @@
                             afterItemAdded="onAfterItemAdded"
                             noDataDescription="{i18n>noAttachmentsDescription}"
                             noDataText="{i18n>noAttachmentsText}"        
-                            mediaTypeMismatch = "onMediaTypeMismatch"                    
-                                                
+                            mediaTypeMismatch = "onMediaTypeMismatch"       
+                            fileTypeMismatch = "onFileTypeMismatch"                                                               
                             >
                             <upload:toolbar>
                                 <OverflowToolbar id="OverflowToolbar">
