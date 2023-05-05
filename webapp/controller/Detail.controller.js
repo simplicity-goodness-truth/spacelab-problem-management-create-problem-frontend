@@ -8,6 +8,7 @@ const textTypes = Object.freeze(
         static internalNote = 'SU04';
         static solution = 'SUSO';
         static businessConsequences = 'SUBI';
+        static additionalInformation = 'SU30';
     });
 
 const mandatoryInputFields = Object.freeze(
@@ -17,7 +18,6 @@ const mandatoryInputFields = Object.freeze(
             "tableGeneralDataItemInputDescription",
             "tableGeneralDataItemInputReproduction",
             "tableGeneralDataItemInputBusinessImpact",
-            "tableGeneralDataItemInputDate",
             "tableGeneralDataItemSelectPriority",
             "tableGeneralDataItemSelectSystem"];
     });
@@ -103,6 +103,14 @@ sap.ui.define([
         /* =========================================================== */
 
         /**
+        * Selected file extension mismatch
+        */
+        onFileTypeMismatch: function () {
+
+            sap.m.MessageBox.error(this.getResourceBundle().getText("fileFormatIsNotSupported"));
+
+        },
+        /**
         * Selected file format mismatch
         */
         onMediaTypeMismatch: function () {
@@ -126,11 +134,9 @@ sap.ui.define([
         onBeforeRendering: function () {
 
 
+            this._setSystemSelection(function () {
 
-            this._setSystemSelection();
-
-
-
+            });
 
         },
         /**
@@ -138,14 +144,20 @@ sap.ui.define([
         */
         onCompanyHasBeenSelected: function () {
 
-            this._processCompanySelection();
+            var t = this;
 
-            if (this.getModel()) {
+            this._processCompanySelection(function () {
 
-                this.getModel().refresh();
+                if (t.getModel()) {
 
-            }
+                    t.getModel().refresh();
+
+                }
+
+            });
+
         },
+
 
         /**
         * Upload completed
@@ -357,7 +369,7 @@ sap.ui.define([
         /**
        * Set system selector
        */
-        _setSystemSelection: function () {
+        _setSystemSelection: function (callback) {
 
 
             // Model for list of systems            
@@ -365,9 +377,15 @@ sap.ui.define([
             var oSystemsList = this.getOwnerComponent().getModel("systemSelectorModel"),
                 oSelectedCompany = this.getOwnerComponent().getModel("selectedCompany");
 
-            this.byId("tableGeneralDataItemSelectSystem").setModel(oSystemsList, "systemSelectorModel");
+            if (this.byId("tableGeneralDataItemSelectSystem")) {
 
-            if ((oSystemsList) && (oSystemsList.oData.SystemsList.length > 0)) {
+                this.byId("tableGeneralDataItemSelectSystem").setModel(oSystemsList, "systemSelectorModel");
+
+            }
+
+
+            if ((oSystemsList) && (oSystemsList.oData.SystemsList.length > 0) &&
+                this.byId("tableGeneralDataItemSelectSystem")) {
 
                 this.byId("tableGeneralDataItemSelectSystem").setProperty("enabled", true);
 
@@ -387,22 +405,31 @@ sap.ui.define([
                 var sSystemSelectorText = this.getResourceBundle().getText("selectSystem", [sCompanyName,
                     oSystemsList.oData.SystemsList.length]);
 
-                this.byId("tableGeneralDataItemSelectSystem").setPlaceholder(sSystemSelectorText);
+                // this.byId("tableGeneralDataItemSelectSystem").setPlaceholder(sSystemSelectorText);
+
+                this.byId("tableGeneralDataItemSelectSystem").setValueStateText(sSystemSelectorText);
             }
+
+            callback();
 
         },
 
         /**
        * Processing for a company selection
        */
-        _processCompanySelection: function () {
+        _processCompanySelection: function (callback) {
+
 
             // Model for selected company
 
             var oSelectedCompany = this.getOwnerComponent().getModel("selectedCompany");
-            this.byId("tableGeneralDataItemInputCompanyStaticMulti").setModel(oSelectedCompany, "selectedCompany");
 
-            this._setSystemSelection();
+
+            if (this.byId("tableGeneralDataItemInputCompanyStaticMulti")) {
+                this.byId("tableGeneralDataItemInputCompanyStaticMulti").setModel(oSelectedCompany, "selectedCompany");
+            }
+
+            this._setSystemSelection(callback);
 
         },
 
@@ -488,6 +515,15 @@ sap.ui.define([
 
                 }
 
+                // Vulnerabilities clearing
+
+                if ((sFieldValue) && (sharedLibrary.getTextFieldTypesToValidateVulnerabilities().includes(t.byId(key).__proto__.getMetadata()._sClassName))) {
+
+                    oProblemInputFieldsValues[key] = sharedLibrary.clearTextFieldVulnerabilities(oProblemInputFieldsValues[key]);
+
+                }
+
+
             } // for (var key in mandatoryFields)
 
             return oProblemInputFieldsValues;
@@ -535,7 +571,6 @@ sap.ui.define([
                     oPayload = {};
 
                 oPayload.Description = sProblemNameText;
-                oPayload.PostingDate = sharedLibrary.convertStringDateToEpoch(sProblemDate);
                 oPayload.ProductGuid = this.Guid;
                 oPayload.ProductName = this.Id;
                 oPayload.Priority = sProblemPriority;
@@ -543,6 +578,11 @@ sap.ui.define([
                 oPayload.NotifyByContactEmail = bProblemUseContactPersonEmail;
                 oPayload.SAPSystemName = sProblemSystem;
 
+                if (sProblemDate) {
+
+                    oPayload.PostingDate = sharedLibrary.convertStringDateToEpoch(sProblemDate);
+
+                }
 
                 if (this.oExecutionContext.SystemUser.AuthorizedToCreateProblemOnBehalf) {
 
