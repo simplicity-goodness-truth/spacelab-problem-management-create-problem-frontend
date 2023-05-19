@@ -22,6 +22,17 @@ const mandatoryInputFields = Object.freeze(
             "tableGeneralDataItemSelectSystem"];
     });
 
+
+const inputFieldsWithMinCharsValidation = Object.freeze(
+    class inputFieldsWithMinCharsValidation {
+        static inputFieldsWithMinCharsValidation = [
+            "tableGeneralDataItemInputName",
+            "tableGeneralDataItemInputDescription",
+            "tableGeneralDataItemInputReproduction",
+            "tableGeneralDataItemInputBusinessImpact"
+        ];
+    });
+
 const emailAddressInputFields = Object.freeze(
     class emailAddressInputFields {
         static emailAddressInputFields = [
@@ -57,6 +68,14 @@ sap.ui.define([
                 busy: false,
                 delay: 0
             });
+
+            //  Runtime model
+
+            var oRuntimeModel = new JSONModel({
+                emailEntered: false
+            });
+
+            this.getOwnerComponent().setModel(oRuntimeModel, "runtimeModel");
 
             this.getRouter().getRoute("object").attachPatternMatched(this._onObjectMatched, this);
 
@@ -95,6 +114,16 @@ sap.ui.define([
             this._attachErrorStateDropToMandatoryFields();
             this._attachErrorStateDropToEmailFields();
 
+            // Disable drag and drop for UploadSet, as it is 
+            // not working properly, when not supported
+            // file type/media is supported
+
+            this._disableUploadSetDragAndDrop();
+
+            // Setting minimum number of characters for text fields
+
+            this._setMinimumCharCountForTextFields();
+
         },
 
 
@@ -103,11 +132,33 @@ sap.ui.define([
         /* =========================================================== */
 
         /**
+        * Email entered in corresponding field
+        */
+        onEmailChange: function () {
+
+            var oRuntimeModel = this.getOwnerComponent().getModel("runtimeModel");
+
+            if (this.byId("tableGeneralDataItemInputContactPersonEmail").getValue()) {
+
+                oRuntimeModel.setProperty("/emailEntered", true);
+
+            } else {
+                this.byId("tableGeneralDataItemCheckboxUseContactPersonEmail").setSelected(false);
+                oRuntimeModel.setProperty("/emailEntered", false);
+
+            }
+
+        },
+
+        /**
         * Selected file extension mismatch
         */
         onFileTypeMismatch: function () {
 
             sap.m.MessageBox.error(this.getResourceBundle().getText("fileFormatIsNotSupported"));
+
+            var oUploadSet = this.byId("problemUploadSet");
+            oUploadSet.removeAllIncompleteItems();
 
         },
         /**
@@ -116,6 +167,9 @@ sap.ui.define([
         onMediaTypeMismatch: function () {
 
             sap.m.MessageBox.error(this.getResourceBundle().getText("fileFormatIsNotSupported"));
+
+            var oUploadSet = this.byId("problemUploadSet");
+            oUploadSet.removeAllIncompleteItems();
 
         },
 
@@ -133,10 +187,17 @@ sap.ui.define([
         */
         onBeforeRendering: function () {
 
-
             this._setSystemSelection(function () {
 
             });
+
+            // Adding minimum characters count to description
+
+            this._addMinimumCharCountForTextFieldsLabels();
+
+            // Set maximum dates for date pickers
+
+            this._setMaximumDatePickersDate();
 
         },
         /**
@@ -266,6 +327,92 @@ sap.ui.define([
         /* begin: internal methods                                     */
         /* =========================================================== */
 
+        /*
+        * Set maximum dates for date pickers
+        */
+        _setMaximumDatePickersDate: function () {
+
+            var dToday = new Date();
+
+            this.byId("tableGeneralDataItemInputDate").setMaxDate(dToday);
+
+        },
+
+        /*
+        * Add minimum characters count to text fields labels
+        */
+        _addMinimumCharCountForTextFieldsLabels: function () {
+
+            if (!this.minimumCharCountForTextFieldsLabelsSet) {
+
+                for (var key in inputFieldsWithMinCharsValidation.inputFieldsWithMinCharsValidation) {
+
+                    var sLabelFieldId = inputFieldsWithMinCharsValidation.inputFieldsWithMinCharsValidation[key] + "Label";
+
+                    var sTextWithMinimumCharCount = this.byId(sLabelFieldId).getText() +
+                        " " + "(" + this.minimumCharCountForTextFields + " " + this.getResourceBundle().getText("minSymbolsCount") + " " + ")";
+
+                    this.byId(sLabelFieldId).setText(sTextWithMinimumCharCount);
+
+                }
+
+                // This flag is used to avoid multiple labels setting in case
+                // when standard onBeforeRendering is called twice
+
+                this.minimumCharCountForTextFieldsLabelsSet = true;
+
+            }
+
+        },
+
+        /*
+        * Set text fields minimum characters count from configuration        
+        */
+        _setMinimumCharCountForTextFields: function () {
+
+            var oApplicationConfiguration = this.getOwnerComponent().getModel("applicationConfiguration"),
+                oParameters = oApplicationConfiguration.oData.ApplicationConfiguration.results,
+                t = this;
+
+            // Setting a default value of 10
+
+            t.minimumCharCountForTextFields = 10;
+
+            // Getting data from configuration
+
+            for (var i = 0; i < oParameters.length; i++) {
+
+                if (oParameters[i].Param.indexOf('NEWPROBLEM_MIN_CHAR_COUNT') > 0) {
+
+                    t.minimumCharCountForTextFields = oParameters[i].Value;
+
+                }
+            }
+        },
+
+
+        /*
+        * Disable drag and drop function for UploadSet
+        */
+        _disableUploadSetDragAndDrop: function () {
+
+            this.getView().byId("problemUploadSet").addDelegate({
+                ondragenter: function (oEvent) {
+                    oEvent.stopPropagation()
+                },
+                ondragover: function (oEvent) {
+                    oEvent.stopPropagation()
+                },
+                ondrop: function (oEvent) {
+                    oEvent.stopPropagation()
+                }
+            }, true);
+
+        },
+
+        /*
+        * Attach error state drop to fields
+        */
         _attachErrorStateDropToFields: function (oFieldsArray) {
 
             // Attaching  change event to  fields to drop erroneous state
@@ -483,13 +630,13 @@ sap.ui.define([
 
                 var sFieldValue = oProblemInputFields[key];
 
-                // Checking mandatory fields
+                // Checking mandatory fields are not empty
 
                 if ((!sFieldValue) && (mandatoryInputFields.mandatoryInputFields.includes(key))) {
 
                     sharedLibrary.setFieldErrorState(t, key);
 
-                    return;
+                    throw new Error('mandatoryFieldsNotSet');
 
                 } else {
 
@@ -499,17 +646,53 @@ sap.ui.define([
 
                 } // if (!sFieldValue)
 
+
+                if (inputFieldsWithMinCharsValidation.inputFieldsWithMinCharsValidation.includes(key)) {
+
+                    // Checking mandatory fields do not contain only spaces
+
+                    if (!sFieldValue.trim().length) {
+
+                        sharedLibrary.setFieldErrorState(t, key);
+
+                        throw new Error('mandatoryFieldContainEmptySymbols');
+
+                    } else {
+
+                        sharedLibrary.dropFieldState(t, key);
+
+                        oProblemInputFieldsValues[key] = sFieldValue;
+
+                    } // if (!sFieldValue)
+
+
+                    // Checking mandatory fields contain configured minimum amount of symbols
+
+                    if (sFieldValue.length < this.minimumCharCountForTextFields) {
+
+                        sharedLibrary.setFieldErrorState(t, key);
+
+                        throw new Error('mandatoryFieldMinCharsNotMeet');
+
+                    } else {
+
+                        sharedLibrary.dropFieldState(t, key);
+
+                        oProblemInputFieldsValues[key] = sFieldValue;
+
+                    } // if (!sFieldValue)
+
+                }
+
                 // Additional check for email fields
 
                 if ((sFieldValue) && (emailAddressInputFields.emailAddressInputFields.includes(key))) {
 
                     if (!sharedLibrary.isValidEmailAddress(sFieldValue)) {
 
-                        sap.m.MessageBox.error(this.getResourceBundle().getText("incorrectEmailFormat"));
-
                         sharedLibrary.setFieldErrorState(t, key);
 
-                        return;
+                        throw new Error('incorrectEmailFormat');
 
                     }
 
@@ -522,7 +705,6 @@ sap.ui.define([
                     oProblemInputFieldsValues[key] = sharedLibrary.clearTextFieldVulnerabilities(oProblemInputFieldsValues[key]);
 
                 }
-
 
             } // for (var key in mandatoryFields)
 
@@ -552,10 +734,10 @@ sap.ui.define([
         */
         _createProblem: function () {
 
-            var oProblemInputFields = this._validateAndGetProblemFields(),
-                t = this;
+            try {
 
-            if (typeof oProblemInputFields !== "undefined") {
+                var oProblemInputFields = this._validateAndGetProblemFields(),
+                    t = this;
 
                 var
                     sProblemDescriptionText = oProblemInputFields.tableGeneralDataItemInputDescription,
@@ -667,10 +849,14 @@ sap.ui.define([
 
                 oPage.setBusy(false);
 
-            } // if ( typeof oProblemInputFields !== "undefined" )
-            else {
+                //} // if ( typeof oProblemInputFields !== "undefined" )
 
-                sap.m.MessageBox.error(t.getResourceBundle().getText("mandatoryFieldsNotSet"));
+            }
+
+            catch (error) {
+
+                sap.m.MessageBox.error(this.getResourceBundle().getText(error.message));
+
             }
 
         },
