@@ -71,6 +71,7 @@ sap.ui.define([
         /* =========================================================== */
         /* event handlers                                              */
         /* =========================================================== */
+
         /**
          * Before form is rendered       
          */
@@ -142,6 +143,7 @@ sap.ui.define([
 
             } // if (elementsCount !== 0 )
 
+          
 
         },
 
@@ -337,6 +339,7 @@ sap.ui.define([
 
         },
 
+
         /**
          * Set company related configuration
          */
@@ -368,6 +371,8 @@ sap.ui.define([
                 // Publishing event            
 
                 this.oEventBus.publish("ListAction", "companyHasBeenSelected");
+
+
 
             }
 
@@ -425,11 +430,12 @@ sap.ui.define([
          * @private
          */
         _showDetail: function (oItem) {
+
             var bReplace = !Device.system.phone;
             // set the layout property of FCL control to show two columns
             this.getModel("appView").setProperty("/layout", "TwoColumnsMidExpanded");
             this.getRouter().navTo("object", {
-                objectId: oItem.getBindingContext().getProperty("Guid")
+                objectId: oItem.getBindingContext().getProperty("Guid")                
             }, bReplace);
         },
 

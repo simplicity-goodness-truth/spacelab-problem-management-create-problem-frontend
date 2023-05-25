@@ -77,12 +77,41 @@ sap.ui.define([
 
             });
 
+            // Getting application configuration
+
+            this._getApplicationConfiguration(function () {
+
+                var oApplicationConfiguration = new sap.ui.model.json.JSONModel({
+
+                    ApplicationConfiguration: t.oApplicationConfiguration
+
+                });
+
+                t.getOwnerComponent().setModel(oApplicationConfiguration, "applicationConfiguration");
+
+            });
+
         },
 
         /* =========================================================== */
         /* begin: internal methods                                     */
         /* =========================================================== */
-        
+
+        /**
+        * Get application configuration
+        */
+        _getApplicationConfiguration: function (callback) {
+
+            var t = this,
+                sErroneousExecutionText = this.getResourceBundle().getText("oDataModelReadFailure");
+
+            sharedLibrary.readEntityWithFilter("FrontendConfiguration", "Application eq 'zslpmcrprb'", sErroneousExecutionText, this, false, true, function (oData) {
+                t.oApplicationConfiguration = oData;
+                return callback();
+
+            });
+        },
+
         /**
         * Get list of companies
         */
@@ -119,8 +148,8 @@ sap.ui.define([
                     return callback();
 
                 }
-                
-             
+
+
 
             });
         }
