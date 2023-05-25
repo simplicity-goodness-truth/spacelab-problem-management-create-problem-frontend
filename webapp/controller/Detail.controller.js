@@ -16,9 +16,6 @@ const mandatoryInputFields = Object.freeze(
         static mandatoryInputFields = [
             "tableGeneralDataItemInputName",
             "tableGeneralDataItemInputDescription",
-            "tableGeneralDataItemInputReproduction",
-            "tableGeneralDataItemInputBusinessImpact",
-            "tableGeneralDataItemSelectPriority",
             "tableGeneralDataItemSelectSystem"];
     });
 
@@ -27,9 +24,7 @@ const inputFieldsWithMinCharsValidation = Object.freeze(
     class inputFieldsWithMinCharsValidation {
         static inputFieldsWithMinCharsValidation = [
             "tableGeneralDataItemInputName",
-            "tableGeneralDataItemInputDescription",
-            "tableGeneralDataItemInputReproduction",
-            "tableGeneralDataItemInputBusinessImpact"
+            "tableGeneralDataItemInputDescription"
         ];
     });
 
@@ -196,8 +191,10 @@ sap.ui.define([
             this._addMinimumCharCountForTextFieldsLabels();
 
             // Set maximum dates for date pickers
-
             this._setMaximumDatePickersDate();
+
+            // Set minimum dates for date pickers
+            this._setMinimumDatePickersDate();
 
         },
         /**
@@ -328,6 +325,29 @@ sap.ui.define([
         /* =========================================================== */
 
         /*
+        * Set minimum dates for date pickers
+        */
+        _setMinimumDatePickersDate: function () {
+
+            var dToday = new Date();
+
+            var dMonth,
+                dYear,
+                dPreviousYear,
+                dDay,
+                dYearAgo;
+
+            dMonth = dToday.getMonth();
+            dYear = dToday.getFullYear();
+            dPreviousYear = dYear - 1;
+            dDay = dToday.getDate();
+            dYearAgo = new Date(Date.UTC(dPreviousYear, dMonth, dDay));
+
+            this.byId("tableGeneralDataItemInputDate").setMinDate(dYearAgo);
+
+        },
+
+        /*
         * Set maximum dates for date pickers
         */
         _setMaximumDatePickersDate: function () {
@@ -343,7 +363,7 @@ sap.ui.define([
         */
         _addMinimumCharCountForTextFieldsLabels: function () {
 
-            if (!this.minimumCharCountForTextFieldsLabelsSet) {
+            if ((this.minimumCharCountForTextFields > 0) && (!this.minimumCharCountForTextFieldsLabelsSet)) {
 
                 for (var key in inputFieldsWithMinCharsValidation.inputFieldsWithMinCharsValidation) {
 
@@ -373,10 +393,6 @@ sap.ui.define([
             var oApplicationConfiguration = this.getOwnerComponent().getModel("applicationConfiguration"),
                 oParameters = oApplicationConfiguration.oData.ApplicationConfiguration.results,
                 t = this;
-
-            // Setting a default value of 10
-
-            t.minimumCharCountForTextFields = 10;
 
             // Getting data from configuration
 
@@ -668,7 +684,7 @@ sap.ui.define([
 
                     // Checking mandatory fields contain configured minimum amount of symbols
 
-                    if (sFieldValue.length < this.minimumCharCountForTextFields) {
+                    if ((this.minimumCharCountForTextFields > 0) && (sFieldValue.length < this.minimumCharCountForTextFields)) {
 
                         sharedLibrary.setFieldErrorState(t, key);
 

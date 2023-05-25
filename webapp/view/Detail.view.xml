@@ -51,15 +51,15 @@
                                 <TextArea id="tableGeneralDataItemInputDescription" value="" width="100%" rows="7" />
                             </ColumnListItem>
                             <ColumnListItem id="tableGeneralDataReproduction">
-                                <Text id="tableGeneralDataItemInputReproductionLabel" text="{i18n>problemReproduction}*" />
+                                <Text id="tableGeneralDataItemInputReproductionLabel" text="{i18n>problemReproduction}" />
                                 <TextArea id="tableGeneralDataItemInputReproduction" value="" width="100%" rows="7" />
                             </ColumnListItem>
                             <ColumnListItem id="tableGeneralDataBusinessImpact">
-                                <Text id="tableGeneralDataItemInputBusinessImpactLabel" text="{i18n>problemBusinessImpact}*" />
+                                <Text id="tableGeneralDataItemInputBusinessImpactLabel" text="{i18n>problemBusinessImpact}" />
                                 <TextArea id="tableGeneralDataItemInputBusinessImpact" value="" width="100%" rows="7" />
                             </ColumnListItem>
-                            <ColumnListItem id="tableGeneralDataPriorities" >
-                                <Text id="tableGeneralDataItemLabelPriorities" text="{i18n>problemPriority}*" />
+                            <ColumnListItem id="tableGeneralDataPriorities" visible="{= ${ShowPriorities} ? true : false }">
+                                <Text id="tableGeneralDataItemLabelPriorities" text="{i18n>problemPriority}" />
                                 <Select id="tableGeneralDataItemSelectPriority" width="70%" 
                                 enabled="{= ${PrioritiesCount} > 1 ? true : false }"
                                 showSecondaryValues="true" items="{Priority}"
