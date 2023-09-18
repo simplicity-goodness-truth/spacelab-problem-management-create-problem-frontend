@@ -10,3 +10,5 @@ archive.zip
 .*_mta_build_tmp
 *.rar
 *.zip
+.nwabaprc
+*ui5*.yaml
