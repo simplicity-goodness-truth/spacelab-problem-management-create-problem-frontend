@@ -1,39 +1,3 @@
-// Constants classes
-
-const textTypes = Object.freeze(
-    class textTypes {
-        static reply = 'SU01';
-        static description = 'SU99';
-        static reproductionSteps = 'SURS';
-        static internalNote = 'SU04';
-        static solution = 'SUSO';
-        static businessConsequences = 'SUBI';
-        static additionalInformation = 'SU30';
-    });
-
-const mandatoryInputFields = Object.freeze(
-    class mandatoryInputFields {
-        static mandatoryInputFields = [
-            "tableGeneralDataItemInputName",
-            "tableGeneralDataItemInputDescription",
-            "tableGeneralDataItemSelectSystem"];
-    });
-
-
-const inputFieldsWithMinCharsValidation = Object.freeze(
-    class inputFieldsWithMinCharsValidation {
-        static inputFieldsWithMinCharsValidation = [
-            "tableGeneralDataItemInputName",
-            "tableGeneralDataItemInputDescription"
-        ];
-    });
-
-const emailAddressInputFields = Object.freeze(
-    class emailAddressInputFields {
-        static emailAddressInputFields = [
-            "tableGeneralDataItemInputContactPersonEmail"];
-    });
-
 sap.ui.define([
     "./BaseController",
     "sap/ui/model/json/JSONModel",
@@ -103,6 +67,27 @@ sap.ui.define([
             var oEventBus = sap.ui.getCore().getEventBus();
             // 1. ChannelName, 2. EventName, 3. Function to be executed, 4. Listener
             oEventBus.subscribe("ListAction", "companyHasBeenSelected", this.onCompanyHasBeenSelected, this);
+
+
+            // Getting frontend constants
+
+            this.oFrontendConstants = this.getOwnerComponent().getModel("frontendConstants");
+
+            // Filling text types constants
+
+            this.textTypes = Object.freeze(this._setTextTypesConstants());
+
+            // Filling mandatory input fields
+
+            this.mandatoryInputFields = Object.freeze(this._setMandatoryInputFieldsConstants());
+
+            // Filling input fields with min chars validation
+
+            this.inputFieldsWithMinCharsValidation = Object.freeze(this._setInputFieldsWithMinCharsValidationConstants());
+
+            // Filling email address input fields constants
+
+            this.emailAddressInputFields = Object.freeze(this._setEmailAddressInputFieldsConstants());            
 
             // Attaching error state drop events to mandatory and email fields
 
@@ -325,6 +310,93 @@ sap.ui.define([
         /* =========================================================== */
 
         /*
+        * Set email address input fields constants
+        */
+        _setEmailAddressInputFieldsConstants: function () {
+
+            const emailAddressInputFields = [];
+
+            for (var i = 0; i < this.oFrontendConstants.oData.FrontendConstants.results.length; i++) {
+
+                if (this.oFrontendConstants.oData.FrontendConstants.results[i].Class == 'emailAddressInputFields') {
+
+                    emailAddressInputFields.push(this.oFrontendConstants.oData.FrontendConstants.results[i].Value);
+
+                }
+
+            }
+
+            return { 'emailAddressInputFields': emailAddressInputFields };
+
+        },
+
+        /*
+        * Set mandatory input fields constants        
+        */
+        _setInputFieldsWithMinCharsValidationConstants: function () {
+
+            const inputFieldsWithMinCharsValidation = [];
+
+            for (var i = 0; i < this.oFrontendConstants.oData.FrontendConstants.results.length; i++) {
+
+                if (this.oFrontendConstants.oData.FrontendConstants.results[i].Class == 'inputFieldsWithMinCharsValidation') {
+
+                    inputFieldsWithMinCharsValidation.push(this.oFrontendConstants.oData.FrontendConstants.results[i].Value);
+
+                }
+
+            }
+
+            return { 'inputFieldsWithMinCharsValidation': inputFieldsWithMinCharsValidation };
+
+        },
+
+        /*
+        * Set mandatory input fields constants        
+        */
+
+        _setMandatoryInputFieldsConstants: function () {
+
+            const mandatoryInputFields = [];
+
+            for (var i = 0; i < this.oFrontendConstants.oData.FrontendConstants.results.length; i++) {
+
+                if (this.oFrontendConstants.oData.FrontendConstants.results[i].Class == 'mandatoryInputFields') {
+
+                    mandatoryInputFields.push(this.oFrontendConstants.oData.FrontendConstants.results[i].Value);
+
+                }
+
+            }
+
+            return { 'mandatoryInputFields': mandatoryInputFields };
+
+        },
+
+        /*
+        * Set text types constants        
+        */
+        _setTextTypesConstants: function () {
+
+            const textTypes = {
+
+            };
+
+            for (var i = 0; i < this.oFrontendConstants.oData.FrontendConstants.results.length; i++) {
+
+                if (this.oFrontendConstants.oData.FrontendConstants.results[i].Class == 'textTypes') {
+
+                    textTypes[this.oFrontendConstants.oData.FrontendConstants.results[i].Parameter] = this.oFrontendConstants.oData.FrontendConstants.results[i].Value;
+
+                }
+
+            }
+
+            return textTypes;
+
+        },
+
+        /*
         * Set minimum dates for date pickers
         */
         _setMinimumDatePickersDate: function () {
@@ -363,11 +435,13 @@ sap.ui.define([
         */
         _addMinimumCharCountForTextFieldsLabels: function () {
 
+            var t = this;
+
             if ((this.minimumCharCountForTextFields > 0) && (!this.minimumCharCountForTextFieldsLabelsSet)) {
 
-                for (var key in inputFieldsWithMinCharsValidation.inputFieldsWithMinCharsValidation) {
+                for (var key in t.inputFieldsWithMinCharsValidation.inputFieldsWithMinCharsValidation) {
 
-                    var sLabelFieldId = inputFieldsWithMinCharsValidation.inputFieldsWithMinCharsValidation[key] + "Label";
+                    var sLabelFieldId = t.inputFieldsWithMinCharsValidation.inputFieldsWithMinCharsValidation[key] + "Label";
 
                     var sTextWithMinimumCharCount = this.byId(sLabelFieldId).getText() +
                         " " + "(" + this.minimumCharCountForTextFields + " " + this.getResourceBundle().getText("minSymbolsCount") + " " + ")";
@@ -497,7 +571,7 @@ sap.ui.define([
         */
         _attachErrorStateDropToEmailFields: function () {
 
-            this._attachErrorStateDropToFields(emailAddressInputFields.emailAddressInputFields);
+            this._attachErrorStateDropToFields(this.emailAddressInputFields.emailAddressInputFields);
 
         },
 
@@ -524,7 +598,7 @@ sap.ui.define([
         */
         _attachErrorStateDropToMandatoryFields: function () {
 
-            this._attachErrorStateDropToFields(mandatoryInputFields.mandatoryInputFields);
+            this._attachErrorStateDropToFields(this.mandatoryInputFields.mandatoryInputFields);
 
         },
 
@@ -648,7 +722,7 @@ sap.ui.define([
 
                 // Checking mandatory fields are not empty
 
-                if ((!sFieldValue) && (mandatoryInputFields.mandatoryInputFields.includes(key))) {
+                if ((!sFieldValue) && (t.mandatoryInputFields.mandatoryInputFields.includes(key))) {
 
                     sharedLibrary.setFieldErrorState(t, key);
 
@@ -663,7 +737,7 @@ sap.ui.define([
                 } // if (!sFieldValue)
 
 
-                if (inputFieldsWithMinCharsValidation.inputFieldsWithMinCharsValidation.includes(key)) {
+                if (t.inputFieldsWithMinCharsValidation.inputFieldsWithMinCharsValidation.includes(key)) {
 
                     // Checking mandatory fields do not contain only spaces
 
@@ -702,7 +776,7 @@ sap.ui.define([
 
                 // Additional check for email fields
 
-                if ((sFieldValue) && (emailAddressInputFields.emailAddressInputFields.includes(key))) {
+                if ((sFieldValue) && (t.emailAddressInputFields.emailAddressInputFields.includes(key))) {
 
                     if (!sharedLibrary.isValidEmailAddress(sFieldValue)) {
 
@@ -823,15 +897,15 @@ sap.ui.define([
 
                         }
 
-                        t._createProblemText(sGuid, textTypes.description, sProblemDescriptionText);
+                        t._createProblemText(sGuid, t.textTypes.description, sProblemDescriptionText);
 
                         // Setting reproduction text
 
-                        t._createProblemText(sGuid, textTypes.reproductionSteps, sProblemReproductionText);
+                        t._createProblemText(sGuid, t.textTypes.reproductionSteps, sProblemReproductionText);
 
                         // Setting Business Impact
 
-                        t._createProblemText(sGuid, textTypes.businessConsequences, sProblemBusinessImpactText);
+                        t._createProblemText(sGuid, t.textTypes.businessConsequences, sProblemBusinessImpactText);
 
 
                         // Uploading attachments: removing dashes from Guid

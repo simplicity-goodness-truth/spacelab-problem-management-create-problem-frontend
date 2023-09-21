@@ -12,3 +12,4 @@ archive.zip
 *.zip
 .nwabaprc
 *ui5*.yaml
+.vscode
